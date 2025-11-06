@@ -10,6 +10,7 @@ import {
 import { Sparkles, User, Settings, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { NavLink } from "@/components/NavLink";
 
 interface DashboardHeaderProps {
   userEmail?: string;
@@ -42,24 +43,27 @@ const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
               </span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
-              <Link
+              <NavLink
                 to="/dashboard"
-                className="text-foreground font-medium hover:text-accent transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                activeClassName="text-primary"
               >
                 Dashboard
-              </Link>
-              <Link
+              </NavLink>
+              <NavLink
                 to="/reports"
-                className="text-muted-foreground hover:text-accent transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                activeClassName="text-primary"
               >
                 Reports
-              </Link>
-              <Link
+              </NavLink>
+              <NavLink
                 to="/pricing"
-                className="text-muted-foreground hover:text-accent transition-colors"
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                activeClassName="text-primary"
               >
                 Pricing
-              </Link>
+              </NavLink>
             </nav>
           </div>
           <DropdownMenu>
