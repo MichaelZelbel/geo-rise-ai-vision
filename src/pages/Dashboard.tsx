@@ -168,7 +168,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pt-20">
         <DashboardHeader userEmail={user?.email} />
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -190,7 +190,7 @@ const Dashboard = () => {
                 profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-20">
       <DashboardHeader userEmail={user.email} />
       <main className="container mx-auto px-4 py-8">
         {!brand ? (

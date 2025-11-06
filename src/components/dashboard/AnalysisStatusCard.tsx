@@ -80,11 +80,28 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: A
         <div className="text-center py-4">
           <Clock className="h-12 w-12 text-accent mx-auto mb-3" />
           <p className="text-card-foreground font-medium mb-2">
-            Your first analysis is pending
+            Ready for your first analysis
           </p>
-          <p className="text-sm text-muted-foreground">
-            We'll scan the AIverse and update your score within 24 hours
+          <p className="text-sm text-muted-foreground mb-4">
+            Get your AI visibility score and insights
           </p>
+          <Button
+            onClick={handleRunAnalysis}
+            disabled={isRunning}
+            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 w-full"
+          >
+            {isRunning ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Running Analysis...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Run First Analysis
+              </>
+            )}
+          </Button>
         </div>
       ) : !isPro ? (
         <div className="text-center py-4">
