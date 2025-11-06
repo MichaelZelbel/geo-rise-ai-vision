@@ -5,11 +5,11 @@ const Footer = () => {
     <footer className="py-12 px-4 border-t border-primary/10">
       <div className="container mx-auto max-w-6xl">
         <div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-foreground/60">
-          <a href="#" className="hover:text-accent transition-colors">Privacy Policy</a>
+          <a href="/privacy" className="hover:text-accent transition-colors">Privacy Policy</a>
           <span>•</span>
-          <a href="#" className="hover:text-accent transition-colors">Terms of Service</a>
+          <a href="/terms" className="hover:text-accent transition-colors">Terms of Service</a>
           <span>•</span>
-          <a href="#" className="hover:text-accent transition-colors">Cookies Policy</a>
+          <a href="/cookies" className="hover:text-accent transition-colors">Cookies Policy</a>
           <span>•</span>
           <a href="/pricing" className="hover:text-accent transition-colors">Pricing</a>
         </div>
