@@ -208,7 +208,7 @@ const ChatCoach = ({ brandId, userPlan }: ChatCoachProps) => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-primary to-secondary text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse hover:animate-none"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-primary to-secondary text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-[pulse_4s_ease-in-out_infinite] hover:animate-none"
       >
         <Bot className="h-5 w-5" />
         <span className="font-medium">Ask Coach</span>
