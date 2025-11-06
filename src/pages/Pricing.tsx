@@ -65,7 +65,7 @@ const Pricing = () => {
   const tiers = [{
     name: "Free",
     price: "$0",
-    description: "Perfect for trying out GEO RISE",
+    description: "Perfect for trying out GEORISE",
     planId: "free",
     features: [{
       text: "1 brand tracked",

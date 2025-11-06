@@ -24,7 +24,7 @@ const Features = () => {
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            How GEO RISE Works
+            How GEORISE Works
           </h2>
           <p className="text-lg text-foreground/70">
             Three simple steps to elevate your AI visibility

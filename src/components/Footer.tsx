@@ -25,7 +25,7 @@ const Footer = () => {
         </div>
 
         <div className="text-center text-sm text-foreground/50">
-          © {currentYear} by GEO RISE Ltd. All rights reserved.
+          © {currentYear} by GEORISE Ltd. All rights reserved.
         </div>
       </div>
     </footer>

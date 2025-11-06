@@ -39,7 +39,7 @@ const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                GEO RISE
+                GEORISE
               </span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">

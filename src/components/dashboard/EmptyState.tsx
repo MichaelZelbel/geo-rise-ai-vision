@@ -15,7 +15,7 @@ const EmptyState = ({ onStartAnalysis }: EmptyStateProps) => {
           </div>
         </div>
         <h1 className="text-3xl font-bold text-foreground mb-3">
-          Welcome to GEO RISE! 👋
+          Welcome to GEORISE! 👋
         </h1>
         <p className="text-muted-foreground mb-6">
           Let's analyze your AI visibility and discover how the AIverse sees you

@@ -12,7 +12,7 @@ const Header = () => {
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              GEO RISE
+              GEORISE
             </span>
           </div>
           <Link to="/auth">
