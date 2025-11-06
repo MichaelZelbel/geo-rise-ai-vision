@@ -14,7 +14,7 @@ const Hero = () => {
   }, []);
   return <>
       <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
-      <section className="relative min-h-screen px-4 pb-8 overflow-hidden flex flex-col items-center" style={{
+      <section className="relative px-4 pb-32 overflow-hidden flex flex-col items-center" style={{
       paddingTop: `calc(${headerH}px + 35px)`
     }}>
         {/* Background decorative elements */}
