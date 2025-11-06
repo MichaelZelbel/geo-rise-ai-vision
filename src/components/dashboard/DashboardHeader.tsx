@@ -15,9 +15,10 @@ import georiseLogo from "@/assets/georise-logo.png";
 
 interface DashboardHeaderProps {
   userEmail?: string;
+  userPlan?: string;
 }
 
-const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
+const DashboardHeader = ({ userEmail, userPlan }: DashboardHeaderProps) => {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -56,13 +57,15 @@ const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
               >
                 Reports
               </NavLink>
-              <NavLink
-                to="/pricing"
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                activeClassName="text-primary"
-              >
-                Pricing
-              </NavLink>
+              {userPlan === 'free' && (
+                <NavLink
+                  to="/pricing"
+                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                  activeClassName="text-primary"
+                >
+                  Pricing
+                </NavLink>
+              )}
             </nav>
           </div>
           <DropdownMenu>

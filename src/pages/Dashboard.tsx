@@ -169,7 +169,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background pt-20">
-        <DashboardHeader userEmail={user?.email} />
+        <DashboardHeader userEmail={user?.email} userPlan={profile?.plan} />
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Skeleton className="h-64 rounded-xl" />
@@ -191,7 +191,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background pt-20">
-      <DashboardHeader userEmail={user.email} />
+      <DashboardHeader userEmail={user.email} userPlan={profile?.plan} />
       <main className="container mx-auto px-4 py-8">
         {!brand ? (
           <EmptyState onStartAnalysis={handleStartAnalysis} />
