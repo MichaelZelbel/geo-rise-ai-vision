@@ -14,10 +14,58 @@ export type Database = {
   }
   public: {
     Tables: {
+      analyses: {
+        Row: {
+          ai_engine: string
+          brand_id: string
+          id: string
+          mention_type: string | null
+          occurred_at: string
+          position: number | null
+          query: string
+          run_id: string
+          sentiment: string | null
+          url: string | null
+        }
+        Insert: {
+          ai_engine: string
+          brand_id: string
+          id?: string
+          mention_type?: string | null
+          occurred_at?: string
+          position?: number | null
+          query: string
+          run_id?: string
+          sentiment?: string | null
+          url?: string | null
+        }
+        Update: {
+          ai_engine?: string
+          brand_id?: string
+          id?: string
+          mention_type?: string | null
+          occurred_at?: string
+          position?: number | null
+          query?: string
+          run_id?: string
+          sentiment?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_analyses_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           created_at: string
           id: string
+          last_run: string | null
           name: string
           topic: string
           updated_at: string
@@ -27,6 +75,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_run?: string | null
           name: string
           topic: string
           updated_at?: string
@@ -36,6 +85,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_run?: string | null
           name?: string
           topic?: string
           updated_at?: string
@@ -44,6 +94,76 @@ export type Database = {
         }
         Relationships: []
       }
+      competitors: {
+        Row: {
+          brand_id: string
+          competitor_name: string
+          created_at: string
+          delta: number
+          id: string
+          score: number
+        }
+        Insert: {
+          brand_id: string
+          competitor_name: string
+          created_at?: string
+          delta?: number
+          id?: string
+          score?: number
+        }
+        Update: {
+          brand_id?: string
+          competitor_name?: string
+          created_at?: string
+          delta?: number
+          id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_competitors_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insights: {
+        Row: {
+          brand_id: string
+          created_at: string
+          id: string
+          run_id: string | null
+          text: string
+          type: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          id?: string
+          run_id?: string | null
+          text: string
+          type: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          id?: string
+          run_id?: string | null
+          text?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_insights_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -51,6 +171,7 @@ export type Database = {
           id: string
           plan: string
           role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -59,6 +180,7 @@ export type Database = {
           id: string
           plan?: string
           role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -67,7 +189,56 @@ export type Database = {
           id?: string
           plan?: string
           role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      rate_limits: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          last_run: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          ip_hash: string
+          last_run: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          ip_hash?: string
+          last_run?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          active_until: string | null
+          plan: string
+          stripe_customer_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_until?: string | null
+          plan?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_until?: string | null
+          plan?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -97,6 +268,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_add_brand: { Args: { user_uuid: string }; Returns: boolean }
+      get_user_plan: { Args: { user_uuid: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
