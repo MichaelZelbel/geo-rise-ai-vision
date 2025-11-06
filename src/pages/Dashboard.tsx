@@ -103,11 +103,15 @@ const Dashboard = () => {
           .then(({ data, error }) => {
             if (error) {
               console.error("Analysis error:", error);
-              toast.error("Analysis failed. Please try running it manually.");
+              toast.error(error.message || "Failed to start analysis.");
             } else {
-              toast.success(`Analysis complete! Your visibility score is ${data.score}`);
-              loadDashboardData(userId);
+              toast.success("Analysis started! We'll refresh your dashboard shortly.");
+              setTimeout(() => loadDashboardData(userId), 3000);
             }
+          })
+          .catch((err) => {
+            console.error("Analysis request failed:", err);
+            toast.error(err?.message || "Failed to send request to analysis function.");
           });
       }
       

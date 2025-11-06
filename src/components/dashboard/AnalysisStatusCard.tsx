@@ -42,7 +42,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: A
         return;
       }
 
-      const { error } = await supabase.functions.invoke('run-analysis', {
+      const p = supabase.functions.invoke('run-analysis', {
         body: {
           brandId,
           brandName,
@@ -51,11 +51,27 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: A
         }
       });
 
-      if (error) throw error;
-
       toast({
         title: "Analysis Started",
         description: "Your visibility analysis is running. Results will be ready in a few minutes.",
+      });
+
+      p.then(({ error }) => {
+        if (error) {
+          console.error('Analysis error:', error);
+          toast({
+            title: "Error",
+            description: error.message || "Failed to start analysis",
+            variant: "destructive",
+          });
+        }
+      }).catch((err) => {
+        console.error('Analysis request failed:', err);
+        toast({
+          title: "Error",
+          description: err?.message || "Failed to send request to analysis function.",
+          variant: "destructive",
+        });
       });
     } catch (error: any) {
       console.error('Analysis error:', error);
