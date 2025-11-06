@@ -72,7 +72,7 @@ async function checkPerplexity(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'sonar',
+      model: 'sonar-pro',
       messages: [
         {
           role: 'system',
@@ -338,7 +338,13 @@ serve(async (req) => {
 
       } catch (error) {
         console.error(`Error checking query "${query}":`, error);
-        // Continue with other queries
+        // Store failed query result as not mentioned
+        results.push({
+          mentioned: false,
+          position: null,
+          query,
+          citations: []
+        });
       }
     }
 
