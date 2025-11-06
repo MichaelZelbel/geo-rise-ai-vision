@@ -12,6 +12,7 @@ import CompetitorSnapshotCard from "@/components/dashboard/CompetitorSnapshotCar
 import QuickWinsCard from "@/components/dashboard/QuickWinsCard";
 import TopMentionsCard from "@/components/dashboard/TopMentionsCard";
 import EmptyState from "@/components/dashboard/EmptyState";
+import ChatCoach from "@/components/dashboard/ChatCoach";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WizardModal } from "@/components/wizard/WizardModal";
 
@@ -217,6 +218,11 @@ const Dashboard = () => {
             {/* Third Row - Top Mentions */}
             <TopMentionsCard isPro={isPro} />
           </div>
+        )}
+        
+        {/* AI Coach Chatbot */}
+        {brand && profile && (
+          <ChatCoach brandId={brand.id} userPlan={profile.plan} />
         )}
       </main>
       <WizardModal 
