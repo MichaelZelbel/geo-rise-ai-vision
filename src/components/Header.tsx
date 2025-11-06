@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import georiseLogo from "@/assets/georise-logo.png";
 
 const Header = () => {
   return (
@@ -8,9 +8,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+            <img src={georiseLogo} alt="GEORISE Logo" className="w-10 h-10" />
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               GEORISE
             </span>
