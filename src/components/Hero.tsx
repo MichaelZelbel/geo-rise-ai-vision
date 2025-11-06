@@ -25,7 +25,7 @@ const Hero = () => {
         <div className="relative z-10 w-full max-w-4xl mx-auto">
           {/* Robot Character - positioned above panel */}
           <div className="flex justify-center mt-0 mb-[-80px] relative z-20">
-            <img src={robotCharacter} alt="AI Robot Assistant" className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-2xl" />
+            <img src={robotCharacter} alt="AI Robot Assistant" className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-2xl animate-float" />
           </div>
 
           {/* Main Panel */}
