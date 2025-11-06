@@ -15,7 +15,7 @@ const Hero = () => {
   }, []);
   return <>
       <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
-      <section className="relative min-h-screen flex items-center justify-center px-4 pb-8 overflow-hidden" style={{ paddingTop: `calc(${headerH}px + 35px)` }}>
+      <section className="relative min-h-screen px-4 pb-8 overflow-hidden flex flex-col items-center" style={{ paddingTop: `calc(${headerH}px + 35px)` }}>
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
@@ -24,7 +24,7 @@ const Hero = () => {
 
         <div className="relative z-10 w-full max-w-4xl mx-auto">
           {/* Robot Character - positioned above panel */}
-          <div className="flex justify-center mb-[-80px] relative z-20">
+          <div className="flex justify-center mt-[-75px] mb-[-80px] relative z-20">
             <img src={robotCharacter} alt="AI Robot Assistant" className="w-64 h-64 md:w-80 md:h-80 object-contain drop-shadow-2xl animate-float" />
           </div>
 
@@ -34,7 +34,7 @@ const Hero = () => {
             <div className="absolute inset-0 rounded-3xl shadow-[0_0_40px_rgba(37,99,235,0.2)]" />
             
             <div className="relative text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[72px] md:leading-[120px] pb-2">Your Brand Deserves
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[60px] md:leading-[60px] pb-2">Your Brand Deserves
 AI Visibility</h1>
               
               <p className="text-lg md:text-xl text-foreground/80 mb-8 max-w-2xl mx-auto">
