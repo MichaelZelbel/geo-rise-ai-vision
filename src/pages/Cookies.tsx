@@ -1,13 +1,13 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
 const Cookies = () => {
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-12 px-4">
         <div className="container mx-auto max-w-[800px]">
-          <h1 className="text-4xl font-bold mb-4">Cookies Policy</h1>
+          <h1 className="text-4xl font-bold mb-4">
+
+Cookies Policy</h1>
           <p className="text-sm text-muted-foreground mb-8">Last updated: October 9, 2025</p>
           
           <div className="prose prose-slate max-w-none space-y-6">
@@ -95,8 +95,6 @@ const Cookies = () => {
         </div>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Cookies;
