@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -14,9 +15,11 @@ const Header = () => {
               GEO RISE
             </span>
           </div>
-          <Button variant="outline" className="border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all">
-            Sign In
-          </Button>
+          <Link to="/auth">
+            <Button variant="outline" className="border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all">
+              Sign In
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
