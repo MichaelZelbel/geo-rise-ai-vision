@@ -5,7 +5,6 @@ import { WizardModal } from "./wizard/WizardModal";
 const Hero = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [headerH, setHeaderH] = useState(0);
-
   useEffect(() => {
     const el = document.querySelector('header') as HTMLElement | null;
     const compute = () => setHeaderH(el?.offsetHeight ?? 0);
@@ -15,7 +14,9 @@ const Hero = () => {
   }, []);
   return <>
       <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
-      <section className="relative min-h-screen px-4 pb-8 overflow-hidden flex flex-col items-center" style={{ paddingTop: `calc(${headerH}px + 35px)` }}>
+      <section className="relative min-h-screen px-4 pb-8 overflow-hidden flex flex-col items-center" style={{
+      paddingTop: `calc(${headerH}px + 35px)`
+    }}>
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
@@ -34,7 +35,7 @@ const Hero = () => {
             <div className="absolute inset-0 rounded-3xl shadow-[0_0_40px_rgba(37,99,235,0.2)]" />
             
             <div className="relative text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[60px] md:leading-[60px] pb-2">Your Brand Deserves
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[60px] md:leading-[60px] pb-2">Your Brand Deserves 
 AI Visibility</h1>
               
               <p className="text-lg md:text-xl text-foreground/80 mb-8 max-w-2xl mx-auto">
