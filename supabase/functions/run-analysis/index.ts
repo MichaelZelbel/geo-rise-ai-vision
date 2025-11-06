@@ -308,44 +308,48 @@ serve(async (req) => {
 
     console.log(`Running ${queries.length} queries...`);
 
-    // Process queries
-    for (const query of queries) {
-      try {
-        const result = await checkPerplexity(query, brandName);
-        
-        // Store result
-        await supabase.from('analyses').insert({
-          brand_id: brandId,
-          run_id: runId,
-          ai_engine: 'perplexity',
-          query: query,
-          position: result.position,
-          mention_type: result.mentioned ? (result.citations.length > 0 ? 'citation' : 'name_only') : null,
-          sentiment: result.mentioned ? 'neutral' : null,
-          url: result.citations[0] || null,
-          occurred_at: new Date().toISOString()
-        });
+    // Process queries with limited concurrency to avoid timeouts
+    const CONCURRENCY = 4;
+    for (let i = 0; i < queries.length; i += CONCURRENCY) {
+      const batch = queries.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        batch.map(async (query) => {
+          try {
+            const result = await checkPerplexity(query, brandName);
+            
+            // Store result
+            await supabase.from('analyses').insert({
+              brand_id: brandId,
+              run_id: runId,
+              ai_engine: 'perplexity',
+              query,
+              position: result.position,
+              mention_type: result.mentioned ? (result.citations.length > 0 ? 'citation' : 'name_only') : null,
+              sentiment: result.mentioned ? 'neutral' : null,
+              url: result.citations[0] || null,
+              occurred_at: new Date().toISOString()
+            });
 
-        results.push({
-          mentioned: result.mentioned,
-          position: result.position,
-          query,
-          citations: result.citations
-        });
-
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-      } catch (error) {
-        console.error(`Error checking query "${query}":`, error);
-        // Store failed query result as not mentioned
-        results.push({
-          mentioned: false,
-          position: null,
-          query,
-          citations: []
-        });
-      }
+            results.push({
+              mentioned: result.mentioned,
+              position: result.position,
+              query,
+              citations: result.citations
+            });
+          } catch (error) {
+            console.error(`Error checking query "${query}":`, error);
+            // Store failed query result as not mentioned
+            results.push({
+              mentioned: false,
+              position: null,
+              query,
+              citations: []
+            });
+          }
+        })
+      );
+      // Brief pause between batches to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     // Calculate score
