@@ -204,7 +204,13 @@ const Dashboard = () => {
                 lastRun={brand.last_run}
               />
               <AIEngineBreakdownCard mentionedEngines={mentionedEngines} />
-              <AnalysisStatusCard hasAnalysis={hasAnalysis} isPro={isPro} />
+              <AnalysisStatusCard 
+                hasAnalysis={hasAnalysis} 
+                isPro={isPro}
+                brandId={brand.id}
+                brandName={brand.name}
+                topic={brand.topic}
+              />
             </div>
 
             {/* Second Row - Competitors and Quick Win */}

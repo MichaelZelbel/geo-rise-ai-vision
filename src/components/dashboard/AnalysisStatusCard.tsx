@@ -1,14 +1,73 @@
-import { Clock } from "lucide-react";
+import { Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface AnalysisStatusCardProps {
   hasAnalysis: boolean;
   isPro: boolean;
+  brandId?: string;
+  brandName?: string;
+  topic?: string;
 }
 
-const AnalysisStatusCard = ({ hasAnalysis, isPro }: AnalysisStatusCardProps) => {
+const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isRunning, setIsRunning] = useState(false);
+
+  const handleRunAnalysis = async () => {
+    if (!brandId || !brandName || !topic) {
+      toast({
+        title: "Error",
+        description: "Brand information missing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRunning(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('run-analysis', {
+        body: {
+          brandId,
+          brandName,
+          topic,
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Analysis Started",
+        description: "Your visibility analysis is running. Results will be ready in a few minutes.",
+      });
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start analysis",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   return (
     <div className="bg-card rounded-xl p-6 border border-primary/20 shadow-sm">
@@ -50,9 +109,27 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro }: AnalysisStatusCardProps) => 
           <p className="text-card-foreground font-medium mb-2">
             Daily analysis active
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             Your next analysis will run tomorrow
           </p>
+          <Button
+            onClick={handleRunAnalysis}
+            disabled={isRunning}
+            variant="outline"
+            className="w-full"
+          >
+            {isRunning ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Running Analysis...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Run Analysis Now
+              </>
+            )}
+          </Button>
         </div>
       )}
     </div>
