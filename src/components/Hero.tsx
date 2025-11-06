@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import robotCharacter from "@/assets/robot-character.png";
+import robotCharacter from "@/assets/robot-character.webp";
 import { WizardModal } from "./wizard/WizardModal";
 
 const Hero = () => {
