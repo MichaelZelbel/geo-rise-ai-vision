@@ -20,9 +20,9 @@ const features = [
 
 const Features = () => {
   return (
-    <section className="py-20 px-4">
+    <section className="py-12 px-4 bg-white/10 backdrop-blur-xl">
       <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             How GEORISE Works
           </h2>

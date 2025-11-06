@@ -6,7 +6,7 @@ const Hero = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
   return <>
       <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
-      <section className="relative min-h-screen flex items-center justify-center px-4 py-20 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center px-4 pt-24 pb-0 overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
@@ -25,7 +25,7 @@ const Hero = () => {
             <div className="absolute inset-0 rounded-3xl shadow-[0_0_40px_rgba(37,99,235,0.2)]" />
             
             <div className="relative text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-tight">Your Brand Deserves
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[1.3]">Your Brand Deserves
 AI Visibility</h1>
               
               <p className="text-lg md:text-xl text-foreground/80 mb-8 max-w-2xl mx-auto">
