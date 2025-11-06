@@ -135,10 +135,6 @@ const Pricing = () => {
       answer: "Yes! Upgrade or downgrade anytime. Changes take effect immediately.",
     },
     {
-      question: "What happens after the 7-day trial?",
-      answer: "Your card will be charged automatically. Cancel anytime during the trial with no charge.",
-    },
-    {
       question: "Can I cancel my subscription?",
       answer: "Yes, cancel anytime from your Account settings. You'll retain access until the end of your billing period.",
     },
@@ -149,10 +145,6 @@ const Pricing = () => {
     {
       question: "Do you offer refunds?",
       answer: "Yes, we offer a 30-day money-back guarantee if you're not satisfied.",
-    },
-    {
-      question: "What does 'gifted' access mean?",
-      answer: "Special accounts (giftedPro, giftedAgency) receive full features without billing. Contact us for partnership opportunities.",
     },
   ];
 

@@ -11,7 +11,7 @@ const Footer = () => {
           <span>•</span>
           <a href="#" className="hover:text-accent transition-colors">Cookies Policy</a>
           <span>•</span>
-          <a href="#" className="hover:text-accent transition-colors">Pricing</a>
+          <a href="/pricing" className="hover:text-accent transition-colors">Pricing</a>
         </div>
         
         <div className="text-center mb-6">
