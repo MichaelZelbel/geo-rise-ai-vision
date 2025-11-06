@@ -30,8 +30,8 @@ const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
   };
 
   return (
-    <header className="border-b border-border backdrop-blur-md bg-background/30">
-      <div className="container mx-auto px-4 py-4">
+    <header className="border-b border-border backdrop-blur-xl bg-transparent">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/dashboard" className="flex items-center gap-2">

@@ -6,7 +6,7 @@ const Hero = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
   return <>
       <WizardModal open={wizardOpen} onOpenChange={setWizardOpen} />
-      <section className="relative min-h-screen flex items-center justify-center px-4 pt-20 pb-8 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center px-4 pt-16 pb-8 overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
