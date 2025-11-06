@@ -73,18 +73,43 @@ const Dashboard = () => {
 
   const createBrand = async (userId: string, brandName: string, topicName: string) => {
     try {
-      const { error } = await supabase.from("brands").insert({
+      const { data: newBrand, error } = await supabase.from("brands").insert({
         user_id: userId,
         name: brandName,
         topic: topicName,
-      });
+      }).select().single();
 
       if (error) throw error;
       
       toast.success("Brand created successfully!");
       
-      // Clear URL params and reload data
+      // Clear URL params
       navigate("/dashboard", { replace: true });
+      
+      // Trigger analysis in background
+      if (newBrand) {
+        toast.info("Starting AI visibility analysis...");
+        
+        supabase.functions
+          .invoke('run-analysis', {
+            body: {
+              brandId: newBrand.id,
+              brandName: brandName,
+              topic: topicName,
+              userId: userId
+            }
+          })
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Analysis error:", error);
+              toast.error("Analysis failed. Please try running it manually.");
+            } else {
+              toast.success(`Analysis complete! Your visibility score is ${data.score}`);
+              loadDashboardData(userId);
+            }
+          });
+      }
+      
       loadDashboardData(userId);
     } catch (err) {
       console.error("Error creating brand:", err);
