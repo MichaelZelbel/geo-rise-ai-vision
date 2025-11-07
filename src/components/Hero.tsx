@@ -35,8 +35,7 @@ const Hero = () => {
             <div className="absolute inset-0 rounded-3xl shadow-[0_0_40px_rgba(37,99,235,0.2)]" />
             
             <div className="relative text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[60px] md:leading-[60px] pb-2">Your Brand Deserves
-AI Visibility</h1>
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-[60px] md:leading-[60px] pb-2">Your Brand Deserves<br />AI Visibility</h1>
               
               <p className="text-lg md:text-xl text-foreground/80 mb-8 max-w-2xl mx-auto">
                 Elevate your presence across AI-powered search — before your competitors do.
