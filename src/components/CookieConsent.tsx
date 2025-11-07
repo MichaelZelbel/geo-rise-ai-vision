@@ -34,7 +34,7 @@ const CookieConsent = () => {
         >
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
             <p className="text-xs sm:text-sm text-foreground/90 text-center sm:text-left flex-1">
-              We use cookies to enhance your experience and analyze performance. Your privacy matters to us. 🚀
+              Let's bake a few cookies to sweeten your experience and keep your visibility stats nice and crisp. Shall we?
             </p>
             <div className="flex gap-2 shrink-0">
               <Button
