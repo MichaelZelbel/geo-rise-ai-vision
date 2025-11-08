@@ -1,0 +1,247 @@
+{
+  "name": "GEORISE Analysis Starter",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-test",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 100]
+    },
+    {
+      "parameters": {
+        "path": "georise-analysis-start",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-starter",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "georise-analysis-start"
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandId : 'test-brand-uuid' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandName : 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.topic : 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.userId : 'test-user-uuid' }}"
+            },
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ 'run_' + Date.now() + '_' + ($json.body ? $json.body.brandId : 'test') }}"
+            },
+            {
+              "id": "config-timestamp",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "config-node",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [450, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate required fields\nconst config = $('Config').item.json;\n\nconst required = ['brandId', 'brandName', 'topic', 'userId'];\nconst missing = [];\n\nfor (const field of required) {\n  if (!config[field] || config[field].trim() === '' || config[field].includes('test')) {\n    // Skip validation for test/manual trigger\n    if ($('Manual Trigger for Testing').item !== undefined) {\n      continue;\n    }\n    missing.push(field);\n  }\n}\n\nif (missing.length > 0 && $('Webhook Trigger').item !== undefined) {\n  throw new Error(`Missing required fields: ${missing.join(', ')}`);\n}\n\nreturn {\n  json: {\n    runId: config.runId,\n    brandId: config.brandId.trim(),\n    brandName: config.brandName.trim(),\n    topic: config.topic.trim(),\n    userId: config.userId.trim(),\n    timestamp: config.timestamp\n  }\n};"
+      },
+      "id": "validate-prepare",
+      "name": "Validate and Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analysis_runs",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.runId }}",
+            "brand_id": "={{ $json.brandId }}",
+            "brand_name": "={{ $json.brandName }}",
+            "topic": "={{ $json.topic }}",
+            "user_id": "={{ $json.userId }}",
+            "status": "pending",
+            "created_at": "={{ $json.timestamp }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "create-run-record",
+      "name": "Create Run Record",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [850, 200],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "GEORISE Analysis Processor"
+        },
+        "options": {
+          "waitForCompletion": false
+        }
+      },
+      "id": "trigger-processor",
+      "name": "Trigger Processor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, runId: $('Validate and Prepare').item.json.runId, message: 'Analysis started. Poll /api/analysis-status/' + $('Validate and Prepare').item.json.runId + ' for updates.' }) }}",
+        "options": {}
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 400,
+        "responseBody": "={{ JSON.stringify({ success: false, error: $json.error || 'Validation failed' }) }}",
+        "options": {}
+      },
+      "id": "respond-error",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validate and Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Prepare": {
+      "main": [
+        [
+          {
+            "node": "Create Run Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Run Record": {
+      "main": [
+        [
+          {
+            "node": "Trigger Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Processor": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "georise-starter-v2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "n8n-georise"
+  }
+}

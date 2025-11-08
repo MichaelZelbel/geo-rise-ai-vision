@@ -1,0 +1,566 @@
+{
+  "name": "GEORISE Analysis Processor",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-test",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 100]
+    },
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "When Called By Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId || 'run_test_' + Date.now() }}"
+            },
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.brandId || 'test-brand-uuid' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.brandName || 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.topic || 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.userId || 'test-user-uuid' }}"
+            },
+            {
+              "id": "config-batch-size",
+              "name": "BATCH_SIZE",
+              "type": "number",
+              "value": 1
+            },
+            {
+              "id": "config-rate-limit",
+              "name": "RATE_LIMIT_MS",
+              "type": "number",
+              "value": 2000
+            },
+            {
+              "id": "config-total-queries",
+              "name": "TOTAL_QUERIES",
+              "type": "number",
+              "value": 20
+            }
+          ]
+        }
+      },
+      "id": "config-node",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [450, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analysis_runs",
+          "mode": "list"
+        },
+        "updateKey": "run_id",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "processing",
+            "updated_at": "={{ $now.toISO() }}"
+          }
+        },
+        "where": {
+          "values": [
+            {
+              "column": "run_id",
+              "condition": "equal",
+              "value": "={{ $('Config').item.json.runId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-status-processing",
+      "name": "Update Status Processing",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [650, 200],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+      },
+      "id": "generate-queries",
+      "name": "Generate Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "batchSize": "={{ $('Config').item.json.BATCH_SIZE }}",
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "model": "sonar",
+        "messages": {
+          "message": [
+            {
+              "content": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 1000
+        },
+        "requestOptions": {}
+      },
+      "id": "call-perplexity",
+      "name": "Call Perplexity",
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "perplexityApi": {
+          "id": "perplexity_api",
+          "name": "Perplexity API"
+        }
+      },
+      "continueOnFail": true,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "perplexity-success-check",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.choices }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-perplexity-success",
+      "name": "Check Perplexity Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Config').item.json.RATE_LIMIT_MS }}",
+        "unit": "milliseconds"
+      },
+      "id": "rate-limit-delay",
+      "name": "Rate Limit Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1650, 80],
+      "webhookId": "rate-limit-delay"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName.toLowerCase();\nconst perplexityData = $json;\nconst queryData = $('Split Batches').item.json;\n\nconst response = perplexityData.choices[0].message.content;\nconst citations = perplexityData.citations || [];\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  // Position scoring based on location in response\n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  // Extract context around mention\n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: 'perplexity',\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mention_type: mentionType,\n    sentiment: 'neutral',\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    full_response: response.substring(0, 1000),\n    occurred_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "analyze-response",
+      "name": "Analyze Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 80]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analyses",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "brand_id": "={{ $json.brand_id }}",
+            "ai_engine": "={{ $json.ai_engine }}",
+            "query": "={{ $json.query }}",
+            "query_index": "={{ $json.query_index }}",
+            "mentioned": "={{ $json.mentioned }}",
+            "position": "={{ $json.position }}",
+            "mention_type": "={{ $json.mention_type }}",
+            "sentiment": "={{ $json.sentiment }}",
+            "url": "={{ $json.url }}",
+            "context": "={{ $json.context }}",
+            "full_response": "={{ $json.full_response }}",
+            "occurred_at": "={{ $json.occurred_at }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "save-query-result",
+      "name": "Save Query Result",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2050, 80],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log failed query\nconst config = $('Config').item.json;\nconst queryData = $('Split Batches').item.json;\nconst error = $json.error || { message: 'API call failed' };\n\nconsole.error(`Query ${queryData.queryIndex} failed:`, error.message);\n\n// Return minimal result for failed query\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: 'perplexity',\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: false,\n    position: null,\n    mention_type: null,\n    sentiment: null,\n    url: null,\n    context: null,\n    full_response: `ERROR: ${error.message}`,\n    occurred_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "handle-api-error",
+      "name": "Handle API Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 320]
+    },
+    {
+      "parameters": {},
+      "id": "merge-results",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1850, 200]
+    },
+    {
+      "parameters": {},
+      "id": "loop-back",
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2250, 80]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT \n  COUNT(*) as total_queries,\n  SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END) as total_mentions,\n  ROUND(SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END)::numeric / COUNT(*)::numeric * 100, 2) as mention_rate,\n  ROUND(SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END)::numeric / COUNT(*)::numeric * 100, 2) as visibility_score,\n  SUM(CASE WHEN position = 1 THEN 1 ELSE 0 END) as top_position_count,\n  SUM(CASE WHEN mention_type = 'citation' THEN 1 ELSE 0 END) as citation_count,\n  ROUND(AVG(CASE WHEN position IS NOT NULL THEN position ELSE NULL END), 1) as avg_position\nFROM analyses\nWHERE run_id = '{{ $('Config').item.json.runId }}'",
+        "options": {}
+      },
+      "id": "calculate-scores",
+      "name": "Calculate Scores",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2450, 200],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analysis_runs",
+          "mode": "list"
+        },
+        "updateKey": "run_id",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "completed",
+            "progress": 100,
+            "total_queries": "={{ $json.total_queries }}",
+            "queries_completed": "={{ $json.total_queries }}",
+            "total_mentions": "={{ $json.total_mentions }}",
+            "mention_rate": "={{ $json.mention_rate }}",
+            "visibility_score": "={{ $json.visibility_score }}",
+            "top_position_count": "={{ $json.top_position_count }}",
+            "citation_count": "={{ $json.citation_count }}",
+            "avg_position": "={{ $json.avg_position }}",
+            "completed_at": "={{ $now.toISO() }}",
+            "updated_at": "={{ $now.toISO() }}"
+          }
+        },
+        "where": {
+          "values": [
+            {
+              "column": "run_id",
+              "condition": "equal",
+              "value": "={{ $('Config').item.json.runId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-status-completed",
+      "name": "Update Status Completed",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2650, 200],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Called By Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Update Status Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Processing": {
+      "main": [
+        [
+          {
+            "node": "Generate Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Queries": {
+      "main": [
+        [
+          {
+            "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Batches": {
+      "main": [
+        [
+          {
+            "node": "Call Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calculate Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Check Perplexity Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Perplexity Success": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Delay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle API Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Delay": {
+      "main": [
+        [
+          {
+            "node": "Analyze Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Response": {
+      "main": [
+        [
+          {
+            "node": "Save Query Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Query Result": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle API Error": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Save Query Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back": {
+      "main": [
+        [
+          {
+            "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Scores": {
+      "main": [
+        [
+          {
+            "node": "Update Status Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "georise-processor-v2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "n8n-georise"
+  }
+}
