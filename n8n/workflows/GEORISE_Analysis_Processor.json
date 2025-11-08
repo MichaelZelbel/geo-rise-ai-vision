@@ -1,0 +1,371 @@
+{
+  "name": "GEORISE Analysis Processor",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When Called By Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analysis_runs",
+          "mode": "list"
+        },
+        "updateKey": "run_id",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "processing",
+            "updated_at": "={{ $now.toISO() }}"
+          }
+        },
+        "where": {
+          "values": [
+            {
+              "column": "run_id",
+              "condition": "equal",
+              "value": "={{ $json.runId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-status-processing",
+      "name": "Update Status Processing",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('When Called By Another Workflow').item.json;\nconst brandName = data.brandName;\nconst topic = data.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    runId: data.runId,\n    brandId: data.brandId,\n    brandName: brandName,\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+      },
+      "id": "generate-queries",
+      "name": "Generate Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "model": "sonar",
+        "messages": {
+          "message": [
+            {
+              "content": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "call-perplexity",
+      "name": "Call Perplexity",
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "perplexityApi": {
+          "id": "perplexity_api",
+          "name": "Perplexity API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2000,
+        "unit": "milliseconds"
+      },
+      "id": "rate-limit-delay",
+      "name": "Rate Limit Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1250, 300],
+      "webhookId": "rate-limit-delay"
+    },
+    {
+      "parameters": {
+        "jsCode": "const triggerData = $('When Called By Another Workflow').item.json;\nconst brandName = triggerData.brandName.toLowerCase();\nconst response = $json.choices[0].message.content;\nconst citations = $json.citations || [];\nconst queryData = $('Split Batches').item.json;\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    runId: triggerData.runId,\n    brandId: triggerData.brandId,\n    query: queryData.query,\n    queryIndex: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mentionType: mentionType,\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    fullResponse: response.substring(0, 500)\n  }\n};"
+      },
+      "id": "analyze-response",
+      "name": "Analyze Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "query_results",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.runId }}",
+            "brand_id": "={{ $json.brandId }}",
+            "query": "={{ $json.query }}",
+            "query_index": "={{ $json.queryIndex }}",
+            "mentioned": "={{ $json.mentioned }}",
+            "position": "={{ $json.position }}",
+            "mention_type": "={{ $json.mentionType }}",
+            "url": "={{ $json.url }}",
+            "context": "={{ $json.context }}",
+            "full_response": "={{ $json.fullResponse }}",
+            "created_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "save-query-result",
+      "name": "Save Query Result",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "loop-back",
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT \n  COUNT(*) as total_queries,\n  SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END) as mentions,\n  ROUND(SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END)::numeric / COUNT(*)::numeric * 100, 2) as visibility_score,\n  SUM(CASE WHEN position = 1 THEN 1 ELSE 0 END) as top_position,\n  SUM(CASE WHEN mention_type = 'citation' THEN 1 ELSE 0 END) as citations\nFROM query_results\nWHERE run_id = '{{ $('When Called By Another Workflow').item.json.runId }}'",
+        "options": {}
+      },
+      "id": "calculate-scores",
+      "name": "Calculate Scores",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2050, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analysis_runs",
+          "mode": "list"
+        },
+        "updateKey": "run_id",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "completed",
+            "total_queries": "={{ $json.total_queries }}",
+            "total_mentions": "={{ $json.mentions }}",
+            "visibility_score": "={{ $json.visibility_score }}",
+            "top_position_count": "={{ $json.top_position }}",
+            "citation_count": "={{ $json.citations }}",
+            "completed_at": "={{ $now.toISO() }}"
+          }
+        },
+        "where": {
+          "values": [
+            {
+              "column": "run_id",
+              "condition": "equal",
+              "value": "={{ $('When Called By Another Workflow').item.json.runId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-status-completed",
+      "name": "Update Status Completed",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2250, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When Called By Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Update Status Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Processing": {
+      "main": [
+        [
+          {
+            "node": "Generate Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Queries": {
+      "main": [
+        [
+          {
+            "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Batches": {
+      "main": [
+        [
+          {
+            "node": "Call Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calculate Scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Delay": {
+      "main": [
+        [
+          {
+            "node": "Analyze Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Response": {
+      "main": [
+        [
+          {
+            "node": "Save Query Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Query Result": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back": {
+      "main": [
+        [
+          {
+            "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Scores": {
+      "main": [
+        [
+          {
+            "node": "Update Status Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "georise-processor-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "n8n-georise"
+  }
+}
