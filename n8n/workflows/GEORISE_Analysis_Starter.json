@@ -1,0 +1,153 @@
+{
+  "name": "GEORISE Analysis Starter",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "georise-analysis-start",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-starter",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "georise-analysis-start"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\n\nconst required = ['brandId', 'brandName', 'topic', 'userId'];\nfor (const field of required) {\n  if (!body[field] || body[field].trim() === '') {\n    throw new Error(`Missing required field: ${field}`);\n  }\n}\n\nconst runId = 'run_' + Date.now() + '_' + body.brandId;\n\nreturn {\n  json: {\n    runId: runId,\n    brandId: body.brandId.trim(),\n    brandName: body.brandName.trim(),\n    topic: body.topic.trim(),\n    userId: body.userId.trim(),\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "validate-prepare",
+      "name": "Validate and Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "analysis_runs",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.runId }}",
+            "brand_id": "={{ $json.brandId }}",
+            "brand_name": "={{ $json.brandName }}",
+            "topic": "={{ $json.topic }}",
+            "user_id": "={{ $json.userId }}",
+            "status": "pending",
+            "created_at": "={{ $json.timestamp }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "create-run-record",
+      "name": "Create Run Record",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "GEORISE Analysis Processor"
+        },
+        "options": {
+          "waitForCompletion": false
+        }
+      },
+      "id": "trigger-processor",
+      "name": "Trigger Processor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, runId: $('Validate and Prepare').item.json.runId, message: 'Analysis started' }) }}",
+        "options": {}
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate and Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Prepare": {
+      "main": [
+        [
+          {
+            "node": "Create Run Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Run Record": {
+      "main": [
+        [
+          {
+            "node": "Trigger Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Processor": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "georise-starter-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "n8n-georise"
+  }
+}
