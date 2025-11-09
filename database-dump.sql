@@ -12,7 +12,13 @@ INSERT INTO profiles (id, email, role, plan, tenant_id, created_at, updated_at) 
 ('f63cd67c-a5d9-4dd1-a8b3-cb5e4af6d74b', 'fred@free.com', 'user', 'free', NULL, '2025-11-06 19:18:51.672998+00', '2025-11-06 19:18:51.838761+00'),
 ('88a4bc35-1241-4ddd-9fff-e92c3a6f8817', 'peter@pro.com', 'user', 'giftedPro', NULL, '2025-11-06 19:18:52.124474+00', '2025-11-06 19:18:52.211094+00'),
 ('7f078493-f4de-491b-8156-6f7f8f425936', 'benny@business.com', 'user', 'giftedAgency', NULL, '2025-11-06 19:18:52.46513+00', '2025-11-06 19:18:52.538766+00'),
-('eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'alice@admin.com', 'user', 'giftedPro', NULL, '2025-11-06 19:18:52.75753+00', '2025-11-06 19:18:52.817917+00');
+('eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'alice@admin.com', 'user', 'giftedPro', NULL, '2025-11-06 19:18:52.75753+00', '2025-11-06 19:18:52.817917+00')
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  role = EXCLUDED.role,
+  plan = EXCLUDED.plan,
+  tenant_id = EXCLUDED.tenant_id,
+  updated_at = EXCLUDED.updated_at;
 
 -- ============================================
 -- TABLE: brands
@@ -22,7 +28,14 @@ INSERT INTO brands (id, user_id, name, topic, visibility_score, last_run, create
 ('86e7f549-096f-4a33-a7c5-35d3c18441ea', 'f63cd67c-a5d9-4dd1-a8b3-cb5e4af6d74b', 'Gary Vaynerchuck', 'Social Media', 0, NULL, '2025-11-06 19:18:51.946679+00', '2025-11-06 19:18:51.946679+00'),
 ('b07d19d0-5bba-4f03-8be6-eb048d2faa30', '88a4bc35-1241-4ddd-9fff-e92c3a6f8817', 'Michael Zelbel', 'Photography', 15, '2025-11-06 22:20:57.618+00', '2025-11-06 19:18:52.311655+00', '2025-11-06 22:20:57.657503+00'),
 ('bb64f5e7-23e3-48ee-be1d-698201ffad4f', '7f078493-f4de-491b-8156-6f7f8f425936', 'Richard Branson', 'Entrepreneurship', 0, NULL, '2025-11-06 19:18:52.611119+00', '2025-11-06 19:18:52.611119+00'),
-('3789510e-f0da-4a46-9b2f-15b259eef2fe', 'eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'Michael Zelbel', 'AI', 0, NULL, '2025-11-06 19:18:52.877816+00', '2025-11-06 19:18:52.877816+00');
+('3789510e-f0da-4a46-9b2f-15b259eef2fe', 'eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'Michael Zelbel', 'AI', 0, NULL, '2025-11-06 19:18:52.877816+00', '2025-11-06 19:18:52.877816+00')
+ON CONFLICT (id) DO UPDATE SET
+  user_id = EXCLUDED.user_id,
+  name = EXCLUDED.name,
+  topic = EXCLUDED.topic,
+  visibility_score = EXCLUDED.visibility_score,
+  last_run = EXCLUDED.last_run,
+  updated_at = EXCLUDED.updated_at;
 
 -- ============================================
 -- TABLE: user_roles
@@ -33,7 +46,10 @@ INSERT INTO user_roles (id, user_id, role, created_at) VALUES
 ('4652e941-4f2f-4fac-ab53-98fde041009e', '88a4bc35-1241-4ddd-9fff-e92c3a6f8817', 'user', '2025-11-06 19:18:52.124474+00'),
 ('5b1e50b5-e675-4805-9f89-c57200c5235e', '7f078493-f4de-491b-8156-6f7f8f425936', 'user', '2025-11-06 19:18:52.46513+00'),
 ('5ca4b878-9729-4124-9ac2-81bc12605759', 'eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'user', '2025-11-06 19:18:52.75753+00'),
-('fa4ccfae-69fd-41fb-8eac-b8637db9e837', 'eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'admin', '2025-11-06 19:18:52.954049+00');
+('fa4ccfae-69fd-41fb-8eac-b8637db9e837', 'eda6f1a4-99fe-4782-8f01-e69186bc62bb', 'admin', '2025-11-06 19:18:52.954049+00')
+ON CONFLICT (id) DO UPDATE SET
+  user_id = EXCLUDED.user_id,
+  role = EXCLUDED.role;
 
 -- ============================================
 -- TABLE: analyses
@@ -53,7 +69,17 @@ INSERT INTO analyses (id, brand_id, run_id, ai_engine, query, position, mention_
 ('f8f6d363-e781-4f6e-952f-d8aad8d487de', 'b07d19d0-5bba-4f03-8be6-eb048d2faa30', 'b91de0d1-ff67-44a8-bfcc-f1d133fca345', 'perplexity', 'Is Michael Zelbel good at Photography?', 1, 'citation', 'neutral', 'https://journal.phottix.com/photog-friday/cheeky-photographer-michael-zelbel/', '2025-11-06 21:33:54.146+00'),
 ('f8f6cad8-3f6f-4fd9-94a0-d38cfe9aa3b6', 'b07d19d0-5bba-4f03-8be6-eb048d2faa30', 'b91de0d1-ff67-44a8-bfcc-f1d133fca345', 'perplexity', 'Michael Zelbel vs competitors in Photography', 1, 'citation', 'neutral', 'https://journal.phottix.com/photog-friday/cheeky-photographer-michael-zelbel/', '2025-11-06 21:34:01.222+00'),
 ('a73d83a5-4dc7-4492-bc1a-8480578ed6be', 'b07d19d0-5bba-4f03-8be6-eb048d2faa30', 'b91de0d1-ff67-44a8-bfcc-f1d133fca345', 'perplexity', 'Photography expert recommendations', NULL, NULL, NULL, NULL, '2025-11-06 21:34:08.266+00'),
-('4a0891dc-6913-4c03-9b22-5c97077f155b', 'b07d19d0-5bba-4f03-8be6-eb048d2faa30', 'b91de0d1-ff67-44a8-bfcc-f1d133fca345', 'perplexity', 'Photography consulting firms ranking', NULL, NULL, NULL, NULL, '2025-11-06 21:34:19.237+00');
+('4a0891dc-6913-4c03-9b22-5c97077f155b', 'b07d19d0-5bba-4f03-8be6-eb048d2faa30', 'b91de0d1-ff67-44a8-bfcc-f1d133fca345', 'perplexity', 'Photography consulting firms ranking', NULL, NULL, NULL, NULL, '2025-11-06 21:34:19.237+00')
+ON CONFLICT (id) DO UPDATE SET
+  brand_id = EXCLUDED.brand_id,
+  run_id = EXCLUDED.run_id,
+  ai_engine = EXCLUDED.ai_engine,
+  query = EXCLUDED.query,
+  position = EXCLUDED.position,
+  mention_type = EXCLUDED.mention_type,
+  sentiment = EXCLUDED.sentiment,
+  url = EXCLUDED.url,
+  occurred_at = EXCLUDED.occurred_at;
 
 -- ============================================
 -- TABLE: coach_conversations
@@ -76,7 +102,12 @@ Let''s start by focusing on building foundational content. Create dedicated page
 **Next Steps:**
 Ensure these pages use clear, descriptive headings and include relevant keywords like "photography," "portrait photography," "lighting techniques," etc., naturally within the text. This structured content will make it easier for AI to identify and categorize information about Michael Zelbel.
 
-We''ll re-run queries once you''ve had a chance to implement these initial steps. Let''s get Michael Zelbel on the AI map!', '2025-11-06 19:38:17.303645+00');
+We''ll re-run queries once you''ve had a chance to implement these initial steps. Let''s get Michael Zelbel on the AI map!', '2025-11-06 19:38:17.303645+00')
+ON CONFLICT (id) DO UPDATE SET
+  user_id = EXCLUDED.user_id,
+  brand_id = EXCLUDED.brand_id,
+  role = EXCLUDED.role,
+  message = EXCLUDED.message;
 
 -- ============================================
 -- NOTES:
