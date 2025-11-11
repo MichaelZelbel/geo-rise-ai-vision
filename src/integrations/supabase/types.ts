@@ -61,6 +61,65 @@ export type Database = {
           },
         ]
       }
+      analysis_runs: {
+        Row: {
+          brand_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          progress: number | null
+          queries_completed: number | null
+          run_id: string
+          status: string
+          topic: string
+          total_mentions: number | null
+          total_queries: number | null
+          updated_at: string
+          user_id: string
+          visibility_score: number | null
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          progress?: number | null
+          queries_completed?: number | null
+          run_id: string
+          status?: string
+          topic: string
+          total_mentions?: number | null
+          total_queries?: number | null
+          updated_at?: string
+          user_id: string
+          visibility_score?: number | null
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          progress?: number | null
+          queries_completed?: number | null
+          run_id?: string
+          status?: string
+          topic?: string
+          total_mentions?: number | null
+          total_queries?: number | null
+          updated_at?: string
+          user_id?: string
+          visibility_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_runs_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           created_at: string

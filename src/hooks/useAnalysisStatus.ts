@@ -73,7 +73,7 @@ export function useAnalysisStatus(
 
       setData({
         runId: analysisRun.run_id,
-        status: analysisRun.status,
+        status: analysisRun.status as 'pending' | 'processing' | 'completed' | 'failed',
         progress: analysisRun.progress || 0,
         queriesCompleted: analysisRun.queries_completed || 0,
         totalQueries: analysisRun.total_queries || 20,
