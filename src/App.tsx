@@ -11,6 +11,7 @@ import Pricing from "./pages/Pricing";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 import SetupTestUsers from "./pages/SetupTestUsers";
+import GetCredentials from "./pages/GetCredentials";
 import Account from "./pages/Account";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/setup-test-users" element={<SetupTestUsers />} />
+          <Route path="/get-credentials" element={<GetCredentials />} />
           <Route path="/account" element={<Account />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
