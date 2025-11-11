@@ -18,11 +18,15 @@ export type Database = {
         Row: {
           ai_engine: string
           brand_id: string
+          context: string | null
+          full_response: string | null
           id: string
           mention_type: string | null
+          mentioned: boolean | null
           occurred_at: string
           position: number | null
           query: string
+          query_index: number | null
           run_id: string
           sentiment: string | null
           url: string | null
@@ -30,11 +34,15 @@ export type Database = {
         Insert: {
           ai_engine: string
           brand_id: string
+          context?: string | null
+          full_response?: string | null
           id?: string
           mention_type?: string | null
+          mentioned?: boolean | null
           occurred_at?: string
           position?: number | null
           query: string
+          query_index?: number | null
           run_id?: string
           sentiment?: string | null
           url?: string | null
@@ -42,11 +50,15 @@ export type Database = {
         Update: {
           ai_engine?: string
           brand_id?: string
+          context?: string | null
+          full_response?: string | null
           id?: string
           mention_type?: string | null
+          mentioned?: boolean | null
           occurred_at?: string
           position?: number | null
           query?: string
+          query_index?: number | null
           run_id?: string
           sentiment?: string | null
           url?: string | null
@@ -63,14 +75,20 @@ export type Database = {
       }
       analysis_runs: {
         Row: {
+          avg_position: number | null
           brand_id: string
+          brand_name: string
+          citation_count: number | null
+          completed_at: string | null
           created_at: string
           error_message: string | null
           id: string
+          mention_rate: number | null
           progress: number | null
           queries_completed: number | null
           run_id: string
           status: string
+          top_position_count: number | null
           topic: string
           total_mentions: number | null
           total_queries: number | null
@@ -79,14 +97,20 @@ export type Database = {
           visibility_score: number | null
         }
         Insert: {
+          avg_position?: number | null
           brand_id: string
+          brand_name: string
+          citation_count?: number | null
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          mention_rate?: number | null
           progress?: number | null
           queries_completed?: number | null
           run_id: string
-          status?: string
+          status: string
+          top_position_count?: number | null
           topic: string
           total_mentions?: number | null
           total_queries?: number | null
@@ -95,14 +119,20 @@ export type Database = {
           visibility_score?: number | null
         }
         Update: {
+          avg_position?: number | null
           brand_id?: string
+          brand_name?: string
+          citation_count?: number | null
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          mention_rate?: number | null
           progress?: number | null
           queries_completed?: number | null
           run_id?: string
           status?: string
+          top_position_count?: number | null
           topic?: string
           total_mentions?: number | null
           total_queries?: number | null
@@ -112,7 +142,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "analysis_runs_brand_id_fkey"
+            foreignKeyName: "fk_analysis_runs_brand"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
@@ -359,10 +389,79 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analysis_run_summary: {
+        Row: {
+          actual_mentions_count: number | null
+          actual_results_count: number | null
+          avg_position: number | null
+          brand_id: string | null
+          brand_name: string | null
+          citation_count: number | null
+          completed_at: string | null
+          created_at: string | null
+          id: string | null
+          mention_rate: number | null
+          progress: number | null
+          queries_completed: number | null
+          run_id: string | null
+          status: string | null
+          top_position_count: number | null
+          topic: string | null
+          total_mentions: number | null
+          total_queries: number | null
+          updated_at: string | null
+          visibility_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_analysis_runs_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      latest_brand_analyses: {
+        Row: {
+          brand_id: string | null
+          brand_name: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string | null
+          mention_rate: number | null
+          run_id: string | null
+          status: string | null
+          topic: string | null
+          total_mentions: number | null
+          visibility_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_analysis_runs_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_add_brand: { Args: { user_uuid: string }; Returns: boolean }
+      get_analysis_progress: {
+        Args: { p_run_id: string }
+        Returns: {
+          error_message: string
+          progress: number
+          queries_completed: number
+          run_id: string
+          status: string
+          total_mentions: number
+          total_queries: number
+          visibility_score: number
+        }[]
+      }
       get_user_plan: { Args: { user_uuid: string }; Returns: string }
       has_role: {
         Args: {
