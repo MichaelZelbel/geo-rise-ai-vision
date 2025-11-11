@@ -32,7 +32,7 @@
               "id": "config-brand-id",
               "name": "brandId",
               "type": "string",
-              "value": "={{ $json.body ? $json.body.brandId : 'test-brand-uuid' }}"
+              "value": "={{ $json.body ? $json.body.brandId : '00000000-0000-4000-8000-000000000001' }}"
             },
             {
               "id": "config-brand-name",
@@ -50,7 +50,7 @@
               "id": "config-user-id",
               "name": "userId",
               "type": "string",
-              "value": "={{ $json.body ? $json.body.userId : 'test-user-uuid' }}"
+              "value": "={{ $json.body ? $json.body.userId : '00000000-0000-4000-8000-000000000002' }}"
             },
             {
               "id": "config-run-id",
@@ -86,39 +86,51 @@
     {
       "parameters": {
         "operation": "insert",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analysis_runs",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "run_id": "={{ $json.runId }}",
-            "brand_id": "={{ $json.brandId }}",
-            "brand_name": "={{ $json.brandName }}",
-            "topic": "={{ $json.topic }}",
-            "user_id": "={{ $json.userId }}",
-            "status": "pending",
-            "created_at": "={{ $json.timestamp }}"
-          }
-        },
-        "options": {}
+        "tableId": "analysis_runs",
+        "options": {},
+        "dataMode": "defineInNode",
+        "fieldsToSend": {
+          "fields": [
+            {
+              "fieldName": "run_id",
+              "fieldValue": "={{ $json.runId }}"
+            },
+            {
+              "fieldName": "brand_id",
+              "fieldValue": "={{ $json.brandId }}"
+            },
+            {
+              "fieldName": "brand_name",
+              "fieldValue": "={{ $json.brandName }}"
+            },
+            {
+              "fieldName": "topic",
+              "fieldValue": "={{ $json.topic }}"
+            },
+            {
+              "fieldName": "user_id",
+              "fieldValue": "={{ $json.userId }}"
+            },
+            {
+              "fieldName": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldName": "created_at",
+              "fieldValue": "={{ $json.timestamp }}"
+            }
+          ]
+        }
       },
       "id": "create-run-record",
       "name": "Create Run Record",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
       "position": [850, 200],
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
         }
       }
     },

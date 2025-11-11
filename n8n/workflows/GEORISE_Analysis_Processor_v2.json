@@ -33,7 +33,7 @@
               "id": "config-brand-id",
               "name": "brandId",
               "type": "string",
-              "value": "={{ $json.brandId || 'test-brand-uuid' }}"
+              "value": "={{ $json.brandId || '00000000-0000-4000-8000-000000000001' }}"
             },
             {
               "id": "config-brand-name",
@@ -51,7 +51,7 @@
               "id": "config-user-id",
               "name": "userId",
               "type": "string",
-              "value": "={{ $json.userId || 'test-user-uuid' }}"
+              "value": "={{ $json.userId || '00000000-0000-4000-8000-000000000002' }}"
             },
             {
               "id": "config-batch-size",
@@ -83,30 +83,26 @@
     {
       "parameters": {
         "operation": "update",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analysis_runs",
-          "mode": "list"
-        },
-        "updateKey": "run_id",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "processing",
-            "updated_at": "={{ $now.toISO() }}"
-          }
-        },
-        "where": {
-          "values": [
+        "tableId": "analysis_runs",
+        "dataMode": "defineInNode",
+        "fieldsToSend": {
+          "fields": [
             {
-              "column": "run_id",
-              "condition": "equal",
-              "value": "={{ $('Config').item.json.runId }}"
+              "fieldName": "status",
+              "fieldValue": "processing"
+            },
+            {
+              "fieldName": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "filterType": "manual",
+        "matchBy": {
+          "fields": [
+            {
+              "fieldName": "run_id",
+              "fieldValue": "={{ $('Config').item.json.runId }}"
             }
           ]
         },
@@ -114,13 +110,13 @@
       },
       "id": "update-status-processing",
       "name": "Update Status Processing",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
       "position": [650, 200],
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
         }
       }
     },
@@ -232,45 +228,75 @@
     {
       "parameters": {
         "operation": "insert",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analyses",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "run_id": "={{ $json.run_id }}",
-            "brand_id": "={{ $json.brand_id }}",
-            "ai_engine": "={{ $json.ai_engine }}",
-            "query": "={{ $json.query }}",
-            "query_index": "={{ $json.query_index }}",
-            "mentioned": "={{ $json.mentioned }}",
-            "position": "={{ $json.position }}",
-            "mention_type": "={{ $json.mention_type }}",
-            "sentiment": "={{ $json.sentiment }}",
-            "url": "={{ $json.url }}",
-            "context": "={{ $json.context }}",
-            "full_response": "={{ $json.full_response }}",
-            "occurred_at": "={{ $json.occurred_at }}"
-          }
+        "tableId": "analyses",
+        "dataMode": "defineInNode",
+        "fieldsToSend": {
+          "fields": [
+            {
+              "fieldName": "run_id",
+              "fieldValue": "={{ $json.run_id }}"
+            },
+            {
+              "fieldName": "brand_id",
+              "fieldValue": "={{ $json.brand_id }}"
+            },
+            {
+              "fieldName": "ai_engine",
+              "fieldValue": "={{ $json.ai_engine }}"
+            },
+            {
+              "fieldName": "query",
+              "fieldValue": "={{ $json.query }}"
+            },
+            {
+              "fieldName": "query_index",
+              "fieldValue": "={{ $json.query_index }}"
+            },
+            {
+              "fieldName": "mentioned",
+              "fieldValue": "={{ $json.mentioned }}"
+            },
+            {
+              "fieldName": "position",
+              "fieldValue": "={{ $json.position }}"
+            },
+            {
+              "fieldName": "mention_type",
+              "fieldValue": "={{ $json.mention_type }}"
+            },
+            {
+              "fieldName": "sentiment",
+              "fieldValue": "={{ $json.sentiment }}"
+            },
+            {
+              "fieldName": "url",
+              "fieldValue": "={{ $json.url }}"
+            },
+            {
+              "fieldName": "context",
+              "fieldValue": "={{ $json.context }}"
+            },
+            {
+              "fieldName": "full_response",
+              "fieldValue": "={{ $json.full_response }}"
+            },
+            {
+              "fieldName": "occurred_at",
+              "fieldValue": "={{ $json.occurred_at }}"
+            }
+          ]
         },
         "options": {}
       },
       "id": "save-query-result",
       "name": "Save Query Result",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
       "position": [2050, 80],
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
         }
       }
     },
@@ -302,59 +328,105 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT \n  COUNT(*) as total_queries,\n  SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END) as total_mentions,\n  ROUND(SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END)::numeric / COUNT(*)::numeric * 100, 2) as mention_rate,\n  ROUND(SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END)::numeric / COUNT(*)::numeric * 100, 2) as visibility_score,\n  SUM(CASE WHEN position = 1 THEN 1 ELSE 0 END) as top_position_count,\n  SUM(CASE WHEN mention_type = 'citation' THEN 1 ELSE 0 END) as citation_count,\n  ROUND(AVG(CASE WHEN position IS NOT NULL THEN position ELSE NULL END), 1) as avg_position\nFROM analyses\nWHERE run_id = '{{ $('Config').item.json.runId }}'",
+        "operation": "get",
+        "tableId": "analyses",
+        "returnAll": true,
+        "filterType": "manual",
+        "matchBy": {
+          "fields": [
+            {
+              "fieldName": "run_id",
+              "fieldValue": "={{ $('Config').item.json.runId }}"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "calculate-scores",
-      "name": "Calculate Scores",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "id": "get-analyses",
+      "name": "Get Analyses",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
       "position": [2450, 200],
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
         }
       }
     },
     {
       "parameters": {
+        "jsCode": "const analyses = $input.all().map(item => item.json);\nconst totalQueries = analyses.length;\nconst totalMentions = analyses.filter(a => a.mentioned === true).length;\nconst mentionRate = totalQueries > 0 ? Math.round((totalMentions / totalQueries) * 100 * 100) / 100 : 0;\nconst topPositionCount = analyses.filter(a => a.position === 1).length;\nconst citationCount = analyses.filter(a => a.mention_type === 'citation').length;\nconst positionsArray = analyses.filter(a => a.position !== null).map(a => a.position);\nconst avgPosition = positionsArray.length > 0 ? Math.round((positionsArray.reduce((sum, p) => sum + p, 0) / positionsArray.length) * 10) / 10 : null;\n\nreturn {\n  json: {\n    total_queries: totalQueries,\n    total_mentions: totalMentions,\n    mention_rate: mentionRate,\n    visibility_score: mentionRate,\n    top_position_count: topPositionCount,\n    citation_count: citationCount,\n    avg_position: avgPosition\n  }\n};"
+      },
+      "id": "calculate-scores",
+      "name": "Calculate Scores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2650, 200]
+    },
+    {
+      "parameters": {
         "operation": "update",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analysis_runs",
-          "mode": "list"
-        },
-        "updateKey": "run_id",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "completed",
-            "progress": 100,
-            "total_queries": "={{ $json.total_queries }}",
-            "queries_completed": "={{ $json.total_queries }}",
-            "total_mentions": "={{ $json.total_mentions }}",
-            "mention_rate": "={{ $json.mention_rate }}",
-            "visibility_score": "={{ $json.visibility_score }}",
-            "top_position_count": "={{ $json.top_position_count }}",
-            "citation_count": "={{ $json.citation_count }}",
-            "avg_position": "={{ $json.avg_position }}",
-            "completed_at": "={{ $now.toISO() }}",
-            "updated_at": "={{ $now.toISO() }}"
-          }
-        },
-        "where": {
-          "values": [
+        "tableId": "analysis_runs",
+        "dataMode": "defineInNode",
+        "fieldsToSend": {
+          "fields": [
             {
-              "column": "run_id",
-              "condition": "equal",
-              "value": "={{ $('Config').item.json.runId }}"
+              "fieldName": "status",
+              "fieldValue": "completed"
+            },
+            {
+              "fieldName": "progress",
+              "fieldValue": "100"
+            },
+            {
+              "fieldName": "total_queries",
+              "fieldValue": "={{ $json.total_queries }}"
+            },
+            {
+              "fieldName": "queries_completed",
+              "fieldValue": "={{ $json.total_queries }}"
+            },
+            {
+              "fieldName": "total_mentions",
+              "fieldValue": "={{ $json.total_mentions }}"
+            },
+            {
+              "fieldName": "mention_rate",
+              "fieldValue": "={{ $json.mention_rate }}"
+            },
+            {
+              "fieldName": "visibility_score",
+              "fieldValue": "={{ $json.visibility_score }}"
+            },
+            {
+              "fieldName": "top_position_count",
+              "fieldValue": "={{ $json.top_position_count }}"
+            },
+            {
+              "fieldName": "citation_count",
+              "fieldValue": "={{ $json.citation_count }}"
+            },
+            {
+              "fieldName": "avg_position",
+              "fieldValue": "={{ $json.avg_position }}"
+            },
+            {
+              "fieldName": "completed_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldName": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "filterType": "manual",
+        "matchBy": {
+          "fields": [
+            {
+              "fieldName": "run_id",
+              "fieldValue": "={{ $('Config').item.json.runId }}"
             }
           ]
         },
@@ -362,13 +434,13 @@
       },
       "id": "update-status-completed",
       "name": "Update Status Completed",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [2650, 200],
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2850, 200],
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
         }
       }
     }
@@ -440,7 +512,7 @@
         ],
         [
           {
-            "node": "Calculate Scores",
+            "node": "Get Analyses",
             "type": "main",
             "index": 0
           }
@@ -536,6 +608,17 @@
         [
           {
             "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Analyses": {
+      "main": [
+        [
+          {
+            "node": "Calculate Scores",
             "type": "main",
             "index": 0
           }
