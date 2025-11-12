@@ -3,80 +3,155 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "manual-trigger",
+      "id": "482ba03f-6191-4ae5-af44-e8e931857655",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1424,
+        -64
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "55da6266-ef75-4c1a-a520-276ab00109c5",
       "name": "When Called By Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [
+        -1424,
+        128
+      ]
     },
     {
       "parameters": {
-        "operation": "update",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analysis_runs",
-          "mode": "list"
-        },
-        "updateKey": "run_id",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "processing",
-            "updated_at": "={{ $now.toISO() }}"
-          }
-        },
-        "where": {
-          "values": [
+        "assignments": {
+          "assignments": [
             {
-              "column": "run_id",
-              "condition": "equal",
-              "value": "={{ $json.runId }}"
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId || 'run_test_' + Date.now() }}"
+            },
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.brandId || '00000000-0000-4000-8000-000000000001' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.brandName || 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.topic || 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.userId || '00000000-0000-4000-8000-000000000002' }}"
+            },
+            {
+              "id": "config-batch-size",
+              "name": "BATCH_SIZE",
+              "type": "number",
+              "value": 1
+            },
+            {
+              "id": "config-rate-limit",
+              "name": "RATE_LIMIT_S",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "config-total-queries",
+              "name": "TOTAL_QUERIES",
+              "type": "number",
+              "value": 20
             }
           ]
         },
         "options": {}
       },
-      "id": "update-status-processing",
+      "id": "2a380b04-fd25-404c-8dd8-3b2762f11a65",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1216,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "analysis_runs",
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "processing"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "c3ac26f1-57bd-4441-859a-ab217fe115a3",
       "name": "Update Status Processing",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [450, 300],
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        32
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const data = $('When Called By Another Workflow').item.json;\nconst brandName = data.brandName;\nconst topic = data.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    runId: data.runId,\n    brandId: data.brandId,\n    brandName: brandName,\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
       },
-      "id": "generate-queries",
+      "id": "edb4d665-5a61-4d67-985c-950932e4d675",
       "name": "Generate Queries",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [650, 300]
+      "position": [
+        -816,
+        32
+      ]
     },
     {
       "parameters": {
-        "batchSize": 1,
+        "batchSize": "={{ $('Config').item.json.BATCH_SIZE }}",
         "options": {}
       },
-      "id": "split-batches",
+      "id": "6e24fd15-f859-4570-a1fb-f5952dc1b111",
       "name": "Split Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [850, 300]
+      "position": [
+        -576,
+        240
+      ]
     },
     {
       "parameters": {
-        "model": "sonar",
         "messages": {
           "message": [
             {
@@ -84,164 +159,350 @@
             }
           ]
         },
-        "options": {},
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.2
+        },
         "requestOptions": {}
       },
-      "id": "call-perplexity",
+      "id": "7ff9b5e8-6063-4c84-ba6f-9098a05a55fe",
       "name": "Call Perplexity",
       "type": "n8n-nodes-base.perplexity",
       "typeVersion": 1,
-      "position": [1050, 300],
+      "position": [
+        -368,
+        112
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
       "credentials": {
         "perplexityApi": {
-          "id": "perplexity_api",
-          "name": "Perplexity API"
+          "id": "Got1FXNW3Tw0Ynhd",
+          "name": "Perplexity account"
         }
-      }
+      },
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "amount": 2000,
-        "unit": "milliseconds"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "da9aa696-9e82-4ecf-a020-04f85731958e",
+              "leftValue": "={{ $json.choices.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
       },
-      "id": "rate-limit-delay",
+      "id": "8c3bc981-8f5a-4d65-8e17-46c95404e749",
+      "name": "Check Perplexity Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Config').item.json.RATE_LIMIT_S }}"
+      },
+      "id": "628dc654-3c3b-4228-93ec-95acd9229dbb",
       "name": "Rate Limit Delay",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [1250, 300],
+      "position": [
+        -16,
+        -96
+      ],
       "webhookId": "rate-limit-delay"
     },
     {
       "parameters": {
-        "jsCode": "const triggerData = $('When Called By Another Workflow').item.json;\nconst brandName = triggerData.brandName.toLowerCase();\nconst response = $json.choices[0].message.content;\nconst citations = $json.citations || [];\nconst queryData = $('Split Batches').item.json;\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    runId: triggerData.runId,\n    brandId: triggerData.brandId,\n    query: queryData.query,\n    queryIndex: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mentionType: mentionType,\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    fullResponse: response.substring(0, 500)\n  }\n};"
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName.toLowerCase();\nconst perplexityData = $json;\nconst queryData = $('Split Batches').item.json;\n\nconst response = perplexityData.choices[0].message.content;\nconst citations = perplexityData.citations || [];\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  // Position scoring based on location in response\n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  // Extract context around mention\n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: 'perplexity',\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mention_type: mentionType,\n    sentiment: 'neutral',\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    full_response: response.substring(0, 1000),\n    occurred_at: new Date().toISOString()\n  }\n};"
       },
-      "id": "analyze-response",
+      "id": "de6da68e-c7bd-4812-aa50-c69481d4b6f2",
       "name": "Analyze Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1450, 300]
+      "position": [
+        192,
+        -96
+      ]
     },
     {
       "parameters": {
-        "operation": "insert",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "query_results",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "run_id": "={{ $json.runId }}",
-            "brand_id": "={{ $json.brandId }}",
-            "query": "={{ $json.query }}",
-            "query_index": "={{ $json.queryIndex }}",
-            "mentioned": "={{ $json.mentioned }}",
-            "position": "={{ $json.position }}",
-            "mention_type": "={{ $json.mentionType }}",
-            "url": "={{ $json.url }}",
-            "context": "={{ $json.context }}",
-            "full_response": "={{ $json.fullResponse }}",
-            "created_at": "={{ $now.toISO() }}"
-          }
-        },
-        "options": {}
-      },
-      "id": "save-query-result",
-      "name": "Save Query Result",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [1650, 300],
-      "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "tableId": "analyses",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "run_id",
+              "fieldValue": "={{ $json.run_id }}"
+            },
+            {
+              "fieldId": "brand_id",
+              "fieldValue": "={{ $json.brand_id }}"
+            },
+            {
+              "fieldId": "ai_engine",
+              "fieldValue": "={{ $json.ai_engine }}"
+            },
+            {
+              "fieldId": "query",
+              "fieldValue": "={{ $json.query }}"
+            },
+            {
+              "fieldId": "mentioned",
+              "fieldValue": "={{ $json.mentioned }}"
+            },
+            {
+              "fieldId": "position",
+              "fieldValue": "={{ $json.position }}"
+            },
+            {
+              "fieldId": "mention_type",
+              "fieldValue": "={{ $json.mention_type }}"
+            },
+            {
+              "fieldId": "sentiment",
+              "fieldValue": "={{ $json.sentiment }}"
+            },
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $json.url }}"
+            },
+            {
+              "fieldId": "context",
+              "fieldValue": "={{ $json.context }}"
+            },
+            {
+              "fieldId": "full_response",
+              "fieldValue": "={{ $json.full_response }}"
+            },
+            {
+              "fieldId": "occurred_at",
+              "fieldValue": "={{ $json.occurred_at }}"
+            }
+          ]
         }
-      }
+      },
+      "id": "d5c6ad2c-f990-43db-a840-33baa3c595d1",
+      "name": "Save Query Result",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        384,
+        -96
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log failed query\nconst config = $('Config').item.json;\nconst queryData = $('Split Batches').item.json;\nconst error = $json.error || { message: 'API call failed' };\n\nconsole.error(`Query ${queryData.queryIndex} failed:`, error.message);\n\n// Return minimal result for failed query\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: 'perplexity',\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: false,\n    position: null,\n    mention_type: null,\n    sentiment: null,\n    url: null,\n    context: null,\n    full_response: `ERROR: ${error.message}`,\n    occurred_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "269335bb-4a87-48a6-96a2-10d77462223d",
+      "name": "Handle API Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        256
+      ]
     },
     {
       "parameters": {},
-      "id": "loop-back",
+      "id": "3e229237-e874-42cb-ae7a-29971b07d2d8",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        192,
+        240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "cea6ef72-d883-4ccd-8968-0aa9e4a61fd1",
       "name": "Loop Back",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1850, 300]
+      "position": [
+        592,
+        -96
+      ]
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT \n  COUNT(*) as total_queries,\n  SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END) as mentions,\n  ROUND(SUM(CASE WHEN mentioned = true THEN 1 ELSE 0 END)::numeric / COUNT(*)::numeric * 100, 2) as visibility_score,\n  SUM(CASE WHEN position = 1 THEN 1 ELSE 0 END) as top_position,\n  SUM(CASE WHEN mention_type = 'citation' THEN 1 ELSE 0 END) as citations\nFROM query_results\nWHERE run_id = '{{ $('When Called By Another Workflow').item.json.runId }}'",
-        "options": {}
+        "operation": "getAll",
+        "tableId": "analyses",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}"
       },
-      "id": "calculate-scores",
-      "name": "Calculate Scores",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [2050, 300],
+      "id": "d72a7542-ee43-41d8-8da9-3146c5471676",
+      "name": "Get Analyses",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        784,
+        32
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const analyses = $input.all().map(item => item.json);\nconst totalQueries = analyses.length;\nconst totalMentions = analyses.filter(a => a.mentioned === true).length;\nconst mentionRate = totalQueries > 0 ? Math.round((totalMentions / totalQueries) * 100 * 100) / 100 : 0;\nconst topPositionCount = analyses.filter(a => a.position === 1).length;\nconst citationCount = analyses.filter(a => a.mention_type === 'citation').length;\nconst positionsArray = analyses.filter(a => a.position !== null).map(a => a.position);\nconst avgPosition = positionsArray.length > 0 ? Math.round((positionsArray.reduce((sum, p) => sum + p, 0) / positionsArray.length) * 10) / 10 : null;\n\nreturn {\n  json: {\n    total_queries: totalQueries,\n    total_mentions: totalMentions,\n    mention_rate: mentionRate,\n    visibility_score: mentionRate,\n    top_position_count: topPositionCount,\n    citation_count: citationCount,\n    avg_position: avgPosition\n  }\n};"
+      },
+      "id": "014bfcb5-802e-40de-ac70-778eaf0b435e",
+      "name": "Calculate Scores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        32
+      ]
     },
     {
       "parameters": {
         "operation": "update",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analysis_runs",
-          "mode": "list"
-        },
-        "updateKey": "run_id",
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "completed",
-            "total_queries": "={{ $json.total_queries }}",
-            "total_mentions": "={{ $json.mentions }}",
-            "visibility_score": "={{ $json.visibility_score }}",
-            "top_position_count": "={{ $json.top_position }}",
-            "citation_count": "={{ $json.citations }}",
-            "completed_at": "={{ $now.toISO() }}"
-          }
-        },
-        "where": {
-          "values": [
+        "tableId": "analysis_runs",
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}",
+        "fieldsUi": {
+          "fieldValues": [
             {
-              "column": "run_id",
-              "condition": "equal",
-              "value": "={{ $('When Called By Another Workflow').item.json.runId }}"
+              "fieldId": "status",
+              "fieldValue": "completed"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "progress",
+              "fieldValue": "100"
+            },
+            {
+              "fieldId": "total_queries",
+              "fieldValue": "={{ $json.total_queries }}"
+            },
+            {
+              "fieldId": "queries_completed",
+              "fieldValue": "={{ $json.total_queries }}"
+            },
+            {
+              "fieldId": "total_mentions",
+              "fieldValue": "={{ $json.total_mentions }}"
+            },
+            {
+              "fieldId": "mention_rate",
+              "fieldValue": "={{ $json.mention_rate }}"
+            },
+            {
+              "fieldId": "visibility_score",
+              "fieldValue": "={{ $json.visibility_score }}"
+            },
+            {
+              "fieldId": "top_position_count",
+              "fieldValue": "={{ $json.top_position_count }}"
+            },
+            {
+              "fieldId": "citation_count",
+              "fieldValue": "={{ $json.citation_count }}"
+            },
+            {
+              "fieldId": "avg_position",
+              "fieldValue": "= {{ $json.avg_position }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
             }
           ]
-        },
-        "options": {}
+        }
       },
-      "id": "update-status-completed",
+      "id": "032ac0bf-2b2b-4bb2-b978-ad90d094a2bf",
       "name": "Update Status Completed",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [2250, 300],
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        32
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+      },
+      "id": "991c1547-5bcc-478c-8787-eb50cd96a11e",
+      "name": "Generate all 20 Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        -192
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "When Called By Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
       "main": [
         [
           {
@@ -278,14 +539,14 @@
       "main": [
         [
           {
-            "node": "Call Perplexity",
+            "node": "Get Analyses",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Calculate Scores",
+            "node": "Call Perplexity",
             "type": "main",
             "index": 0
           }
@@ -296,7 +557,25 @@
       "main": [
         [
           {
+            "node": "Check Perplexity Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Perplexity Success": {
+      "main": [
+        [
+          {
             "node": "Rate Limit Delay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle API Error",
             "type": "main",
             "index": 0
           }
@@ -336,11 +615,44 @@
         ]
       ]
     },
+    "Handle API Error": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Save Query Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Loop Back": {
       "main": [
         [
           {
             "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Analyses": {
+      "main": [
+        [
+          {
+            "node": "Calculate Scores",
             "type": "main",
             "index": 0
           }
@@ -363,9 +675,11 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "georise-processor-v1",
+  "versionId": "584e6968-8043-48cb-8f33-cc36d25bfa41",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "n8n-georise"
-  }
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "HVpkPV4tbw10G82z",
+  "tags": []
 }
