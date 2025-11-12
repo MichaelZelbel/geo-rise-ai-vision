@@ -68,12 +68,14 @@
     {
       "parameters": {
         "operation": "get",
-        "tableId": "monitoring_configs_due",
+        "tableId": "monitoring_configs",
         "returnAll": true,
+        "filterType": "string",
+        "filters": "active=eq.true",
         "options": {}
       },
       "id": "get-due-configs",
-      "name": "Get Configs Due to Run",
+      "name": "Get Active Configs",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [650, 200],
@@ -87,6 +89,70 @@
     },
     {
       "parameters": {
+        "jsCode": "// Filter configs that are due to run now\nconst items = $input.all();\nconst now = new Date();\n\nconst dueConfigs = items.filter(item => {\n  const nextRunAt = new Date(item.json.next_run_at);\n  return nextRunAt <= now;\n});\n\nif (dueConfigs.length === 0) {\n  return [];\n}\n\n// Also join with brands table data (brand_name) and profiles (plan)\n// For now return configs as-is, assuming brand_name exists in brands table\nreturn dueConfigs.map(item => ({\n  json: {\n    config_id: item.json.id,\n    brand_id: item.json.brand_id,\n    user_id: item.json.user_id,\n    topic: item.json.topic,\n    enabled_engines: item.json.enabled_engines,\n    frequency: item.json.frequency,\n    last_run_at: item.json.last_run_at,\n    next_run_at: item.json.next_run_at\n  }\n}));"
+      },
+      "id": "filter-due-configs",
+      "name": "Filter Configs Due Now",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "brands",
+        "returnAll": true,
+        "filterType": "string",
+        "filters": "id=in.({{ $input.all().map(item => item.json.brand_id).join(',') }})",
+        "options": {}
+      },
+      "id": "get-brands",
+      "name": "Get Brand Names",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "profiles",
+        "returnAll": true,
+        "filterType": "string",
+        "filters": "id=in.({{ $('Filter Configs Due Now').all().map(item => item.json.user_id).join(',') }})",
+        "options": {}
+      },
+      "id": "get-user-plans",
+      "name": "Get User Plans",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "lovable_supabase",
+          "name": "Lovable Supabase"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge configs with brand names and user plans\nconst configs = $('Filter Configs Due Now').all();\nconst brands = $('Get Brand Names').all();\nconst profiles = $('Get User Plans').all();\n\nif (configs.length === 0) {\n  return [];\n}\n\n// Create lookup maps\nconst brandMap = {};\nbrands.forEach(item => {\n  brandMap[item.json.id] = item.json.name;\n});\n\nconst planMap = {};\nprofiles.forEach(item => {\n  planMap[item.json.id] = item.json.plan;\n});\n\n// Merge data\nreturn configs.map(item => ({\n  json: {\n    ...item.json,\n    brand_name: brandMap[item.json.brand_id] || 'Unknown Brand',\n    user_plan: planMap[item.json.user_id] || 'free'\n  }\n}));"
+      },
+      "id": "merge-config-data",
+      "name": "Merge Config Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "version": 2
@@ -95,7 +161,7 @@
           "conditions": [
             {
               "id": "check-has-configs",
-              "leftValue": "={{ $json.length }}",
+              "leftValue": "={{ $input.all().length }}",
               "rightValue": 0,
               "operator": {
                 "type": "number",
@@ -109,17 +175,7 @@
       "name": "Has Configs?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [850, 200]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Get all configs from previous node\nconst configs = $input.all();\nconst stats = $('Initialize Stats').item.json;\n\nif (!configs || configs.length === 0) {\n  return [{\n    json: {\n      message: 'No configs due to run',\n      runStartedAt: stats.runStartedAt,\n      errorCount: 0,\n      successCount: 0,\n      errors: []\n    }\n  }];\n}\n\n// Return each config as a separate item\nreturn configs.map(item => ({ json: item.json }));"
-      },
-      "id": "prepare-configs",
-      "name": "Prepare Configs",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1050, 80]
+      "position": [1650, 200]
     },
     {
       "parameters": {
@@ -129,7 +185,7 @@
       "name": "Loop Through Configs",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1250, 80]
+      "position": [1850, 80]
     },
     {
       "parameters": {
@@ -139,7 +195,7 @@
       "name": "Expand Engines",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1450, 80]
+      "position": [2050, 80]
     },
     {
       "parameters": {
@@ -192,7 +248,7 @@
       "name": "Create Run Record",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1650, 80],
+      "position": [2250, 80],
       "credentials": {
         "supabaseApi": {
           "id": "lovable_supabase",
@@ -226,7 +282,7 @@
       "name": "Run Created?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1850, 80]
+      "position": [2450, 80]
     },
     {
       "parameters": {
@@ -245,7 +301,7 @@
       "name": "Select Processor",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2050, 0]
+      "position": [2650, 0]
     },
     {
       "parameters": {
@@ -264,7 +320,7 @@
       "name": "Execute Processor",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [2250, 0],
+      "position": [2850, 0],
       "continueOnFail": true,
       "retryOnFail": true,
       "maxTries": 3,
@@ -294,7 +350,7 @@
       "name": "Processor Success?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [2450, 0]
+      "position": [3050, 0]
     },
     {
       "parameters": {
@@ -304,7 +360,7 @@
       "name": "Increment Success",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2650, -80]
+      "position": [3250, -80]
     },
     {
       "parameters": {
@@ -331,7 +387,7 @@
       "name": "Update Next Run Time",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [2850, -80],
+      "position": [3450, -80],
       "credentials": {
         "supabaseApi": {
           "id": "lovable_supabase",
@@ -349,7 +405,7 @@
       "name": "Log Processor Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2650, 80]
+      "position": [3250, 80]
     },
     {
       "parameters": {
@@ -384,7 +440,7 @@
       "name": "Mark Run Failed",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [2850, 80],
+      "position": [3450, 80],
       "credentials": {
         "supabaseApi": {
           "id": "lovable_supabase",
@@ -402,7 +458,7 @@
       "name": "Log Create Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2050, 160]
+      "position": [2650, 160]
     },
     {
       "parameters": {},
@@ -410,7 +466,7 @@
       "name": "Merge Results",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
-      "position": [3050, 0]
+      "position": [3650, 0]
     },
     {
       "parameters": {},
@@ -418,7 +474,7 @@
       "name": "No Configs - End",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1050, 320]
+      "position": [1850, 320]
     },
     {
       "parameters": {
@@ -428,7 +484,7 @@
       "name": "Aggregate Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3250, 0]
+      "position": [3850, 0]
     },
     {
       "parameters": {
@@ -454,7 +510,7 @@
       "name": "Has Errors?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [3450, 0]
+      "position": [4050, 0]
     },
     {
       "parameters": {
@@ -464,7 +520,7 @@
       "name": "Format Error Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3650, -80]
+      "position": [4250, -80]
     },
     {
       "parameters": {
@@ -478,7 +534,7 @@
       "name": "Send Error Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [3850, -80],
+      "position": [4450, -80],
       "credentials": {
         "gmailOAuth2": {
           "id": "gmail_oauth",
@@ -493,7 +549,7 @@
       "name": "End",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [4050, 0]
+      "position": [4650, 0]
     }
   ],
   "connections": {
@@ -523,14 +579,58 @@
       "main": [
         [
           {
-            "node": "Get Configs Due to Run",
+            "node": "Get Active Configs",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Configs Due to Run": {
+    "Get Active Configs": {
+      "main": [
+        [
+          {
+            "node": "Filter Configs Due Now",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Configs Due Now": {
+      "main": [
+        [
+          {
+            "node": "Get Brand Names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Brand Names": {
+      "main": [
+        [
+          {
+            "node": "Get User Plans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Plans": {
+      "main": [
+        [
+          {
+            "node": "Merge Config Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Config Data": {
       "main": [
         [
           {
@@ -545,7 +645,7 @@
       "main": [
         [
           {
-            "node": "Prepare Configs",
+            "node": "Loop Through Configs",
             "type": "main",
             "index": 0
           }
@@ -553,17 +653,6 @@
         [
           {
             "node": "No Configs - End",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Configs": {
-      "main": [
-        [
-          {
-            "node": "Loop Through Configs",
             "type": "main",
             "index": 0
           }
