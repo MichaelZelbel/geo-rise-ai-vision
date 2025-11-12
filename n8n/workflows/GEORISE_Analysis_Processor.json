@@ -125,7 +125,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
       },
       "id": "edb4d665-5a61-4d67-985c-950932e4d675",
       "name": "Generate Queries",

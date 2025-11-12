@@ -2,101 +2,218 @@
   "name": "GEORISE Analysis Starter",
   "nodes": [
     {
+      "parameters": {},
+      "id": "0d0ccc38-257d-4b37-9fcc-630b61428b1d",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        -96
+      ]
+    },
+    {
       "parameters": {
         "path": "georise-analysis-start",
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "webhook-starter",
+      "id": "2f358d7d-7b34-4db6-bd23-3ea13a79b3e4",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [250, 300],
+      "position": [
+        -592,
+        112
+      ],
       "webhookId": "georise-analysis-start"
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body;\n\nconst required = ['brandId', 'brandName', 'topic', 'userId'];\nfor (const field of required) {\n  if (!body[field] || body[field].trim() === '') {\n    throw new Error(`Missing required field: ${field}`);\n  }\n}\n\nconst runId = 'run_' + Date.now() + '_' + body.brandId;\n\nreturn {\n  json: {\n    runId: runId,\n    brandId: body.brandId.trim(),\n    brandName: body.brandName.trim(),\n    topic: body.topic.trim(),\n    userId: body.userId.trim(),\n    timestamp: new Date().toISOString()\n  }\n};"
-      },
-      "id": "validate-prepare",
-      "name": "Validate and Prepare",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [450, 300]
-    },
-    {
-      "parameters": {
-        "operation": "insert",
-        "schema": {
-          "__rl": true,
-          "value": "public",
-          "mode": "list"
-        },
-        "table": {
-          "__rl": true,
-          "value": "analysis_runs",
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "run_id": "={{ $json.runId }}",
-            "brand_id": "={{ $json.brandId }}",
-            "brand_name": "={{ $json.brandName }}",
-            "topic": "={{ $json.topic }}",
-            "user_id": "={{ $json.userId }}",
-            "status": "pending",
-            "created_at": "={{ $json.timestamp }}"
-          }
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandId : '00000000-0000-4000-8000-000000000001' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandName : 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.topic : 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.userId : '00000000-0000-4000-8000-000000000002' }}"
+            },
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ 'run_' + Date.now() + '_' + ($json.body ? $json.body.brandId : 'test') }}"
+            },
+            {
+              "id": "config-timestamp",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
         },
         "options": {}
       },
-      "id": "create-run-record",
+      "id": "8b7db5c7-f433-41ab-8047-b8231aa00ca5",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate required fields\nconst config = $('Config').item.json;\n\nconst required = ['brandId', 'brandName', 'topic', 'userId'];\nconst missing = [];\n\nfor (const field of required) {\n  if (!config[field] || config[field].trim() === '' || config[field].includes('test')) {\n    // Skip validation for test/manual trigger\n    if ($('Manual Trigger for Testing').item !== undefined) {\n      continue;\n    }\n    missing.push(field);\n  }\n}\n\nif (missing.length > 0 && $('Webhook Trigger').item !== undefined) {\n  throw new Error(`Missing required fields: ${missing.join(', ')}`);\n}\n\nreturn {\n  json: {\n    runId: config.runId,\n    brandId: config.brandId.trim(),\n    brandName: config.brandName.trim(),\n    topic: config.topic.trim(),\n    userId: config.userId.trim(),\n    timestamp: config.timestamp\n  }\n};"
+      },
+      "id": "e7d54b04-1743-434b-9767-538cf0ca04c0",
+      "name": "Validate and Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "run_id",
+              "fieldValue": "={{ $json.runId }}"
+            },
+            {
+              "fieldId": "brand_id",
+              "fieldValue": "={{ $json.brandId }}"
+            },
+            {
+              "fieldId": "brand_name",
+              "fieldValue": "={{ $json.brandName }}"
+            },
+            {
+              "fieldId": "topic",
+              "fieldValue": "={{ $json.topic }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $json.timestamp }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.userId }}"
+            }
+          ]
+        }
+      },
+      "id": "efa6c56e-8382-46db-bbbe-b4fa044586c0",
       "name": "Create Run Record",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [650, 300],
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        16,
+        16
+      ],
       "credentials": {
-        "postgres": {
-          "id": "supabase_postgres",
-          "name": "Supabase PostgreSQL"
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
         }
       }
     },
     {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
+          "value": "HVpkPV4tbw10G82z",
           "mode": "list",
-          "value": "",
+          "cachedResultUrl": "/workflow/HVpkPV4tbw10G82z",
           "cachedResultName": "GEORISE Analysis Processor"
         },
-        "options": {
-          "waitForCompletion": false
-        }
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
       },
-      "id": "trigger-processor",
+      "id": "c8d4d622-6a40-449b-8220-8af98ba76adc",
       "name": "Trigger Processor",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [850, 300]
+      "position": [
+        208,
+        16
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, runId: $('Validate and Prepare').item.json.runId, message: 'Analysis started' }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, runId: $('Validate and Prepare').item.json.runId, message: 'Analysis started. Poll /api/analysis-status/' + $('Validate and Prepare').item.json.runId + ' for updates.' }) }}",
         "options": {}
       },
-      "id": "respond-success",
+      "id": "483a8704-bd26-4873-a7b5-3dd40162f0ae",
       "name": "Respond Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1050, 300]
+      "position": [
+        416,
+        16
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
       "main": [
         [
           {
@@ -145,9 +262,11 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "georise-starter-v1",
+  "versionId": "e5fea0f9-4aef-4c54-9e76-4cfe155e709c",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "n8n-georise"
-  }
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "4LCjkVi8tY9JNo3G",
+  "tags": []
 }
