@@ -75,6 +75,7 @@ export type Database = {
       }
       analysis_runs: {
         Row: {
+          ai_engine: string | null
           avg_position: number | null
           brand_id: string
           brand_name: string
@@ -84,8 +85,10 @@ export type Database = {
           error_message: string | null
           id: string
           mention_rate: number | null
+          monitoring_config_id: string | null
           progress: number | null
           queries_completed: number | null
+          retry_count: number | null
           run_id: string
           status: string
           top_position_count: number | null
@@ -97,6 +100,7 @@ export type Database = {
           visibility_score: number | null
         }
         Insert: {
+          ai_engine?: string | null
           avg_position?: number | null
           brand_id: string
           brand_name: string
@@ -106,8 +110,10 @@ export type Database = {
           error_message?: string | null
           id?: string
           mention_rate?: number | null
+          monitoring_config_id?: string | null
           progress?: number | null
           queries_completed?: number | null
+          retry_count?: number | null
           run_id: string
           status: string
           top_position_count?: number | null
@@ -119,6 +125,7 @@ export type Database = {
           visibility_score?: number | null
         }
         Update: {
+          ai_engine?: string | null
           avg_position?: number | null
           brand_id?: string
           brand_name?: string
@@ -128,8 +135,10 @@ export type Database = {
           error_message?: string | null
           id?: string
           mention_rate?: number | null
+          monitoring_config_id?: string | null
           progress?: number | null
           queries_completed?: number | null
+          retry_count?: number | null
           run_id?: string
           status?: string
           top_position_count?: number | null
@@ -141,6 +150,20 @@ export type Database = {
           visibility_score?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "analysis_runs_monitoring_config_id_fkey"
+            columns: ["monitoring_config_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analysis_runs_monitoring_config_id_fkey"
+            columns: ["monitoring_config_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_configs_due"
+            referencedColumns: ["config_id"]
+          },
           {
             foreignKeyName: "fk_analysis_runs_brand"
             columns: ["brand_id"]
@@ -281,6 +304,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_insights_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_configs: {
+        Row: {
+          active: boolean | null
+          brand_id: string
+          created_at: string
+          enabled_engines: string[]
+          frequency: string
+          id: string
+          last_run_at: string | null
+          next_run_at: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          brand_id: string
+          created_at?: string
+          enabled_engines?: string[]
+          frequency: string
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          brand_id?: string
+          created_at?: string
+          enabled_engines?: string[]
+          frequency?: string
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_monitoring_configs_brand"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
@@ -446,9 +519,40 @@ export type Database = {
           },
         ]
       }
+      monitoring_configs_due: {
+        Row: {
+          brand_id: string | null
+          brand_name: string | null
+          config_id: string | null
+          enabled_engines: string[] | null
+          frequency: string | null
+          last_run_at: string | null
+          next_run_at: string | null
+          topic: string | null
+          user_id: string | null
+          user_plan: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_monitoring_configs_brand"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      calculate_next_run_at: { Args: { p_frequency: string }; Returns: string }
       can_add_brand: { Args: { user_uuid: string }; Returns: boolean }
+      can_create_monitoring_config: {
+        Args: { p_brand_id: string; p_user_id: string }
+        Returns: {
+          can_create: boolean
+          reason: string
+        }[]
+      }
       get_analysis_progress: {
         Args: { p_run_id: string }
         Returns: {
