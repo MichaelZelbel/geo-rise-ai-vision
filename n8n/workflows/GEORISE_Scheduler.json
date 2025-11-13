@@ -67,89 +67,22 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "monitoring_configs",
-        "returnAll": true,
-        "filterType": "string",
-        "filters": "active=eq.true",
+        "operation": "executeQuery",
+        "query": "SELECT \n  mc.id as config_id,\n  mc.brand_id,\n  mc.user_id,\n  mc.topic,\n  mc.enabled_engines,\n  mc.frequency,\n  mc.last_run_at,\n  mc.next_run_at,\n  b.name as brand_name,\n  p.plan as user_plan\nFROM monitoring_configs mc\nJOIN brands b ON b.id = mc.brand_id\nJOIN profiles p ON p.id = mc.user_id\nWHERE mc.active = true\n  AND mc.next_run_at <= NOW()",
         "options": {}
       },
       "id": "get-due-configs",
-      "name": "Get Active Configs",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "name": "Get Configs Due to Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
       "position": [650, 200],
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase Postgres"
         }
       },
       "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Filter configs that are due to run now\nconst items = $input.all();\nconst now = new Date();\n\nconst dueConfigs = items.filter(item => {\n  const nextRunAt = new Date(item.json.next_run_at);\n  return nextRunAt <= now;\n});\n\nif (dueConfigs.length === 0) {\n  return [];\n}\n\n// Also join with brands table data (brand_name) and profiles (plan)\n// For now return configs as-is, assuming brand_name exists in brands table\nreturn dueConfigs.map(item => ({\n  json: {\n    config_id: item.json.id,\n    brand_id: item.json.brand_id,\n    user_id: item.json.user_id,\n    topic: item.json.topic,\n    enabled_engines: item.json.enabled_engines,\n    frequency: item.json.frequency,\n    last_run_at: item.json.last_run_at,\n    next_run_at: item.json.next_run_at\n  }\n}));"
-      },
-      "id": "filter-due-configs",
-      "name": "Filter Configs Due Now",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [850, 200]
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "tableId": "brands",
-        "returnAll": true,
-        "filterType": "string",
-        "filters": "id=in.({{ $input.all().map(item => item.json.brand_id).join(',') }})",
-        "options": {}
-      },
-      "id": "get-brands",
-      "name": "Get Brand Names",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1050, 200],
-      "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
-        }
-      },
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "tableId": "profiles",
-        "returnAll": true,
-        "filterType": "string",
-        "filters": "id=in.({{ $('Filter Configs Due Now').all().map(item => item.json.user_id).join(',') }})",
-        "options": {}
-      },
-      "id": "get-user-plans",
-      "name": "Get User Plans",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1250, 200],
-      "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
-        }
-      },
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Merge configs with brand names and user plans\nconst configs = $('Filter Configs Due Now').all();\nconst brands = $('Get Brand Names').all();\nconst profiles = $('Get User Plans').all();\n\nif (configs.length === 0) {\n  return [];\n}\n\n// Create lookup maps\nconst brandMap = {};\nbrands.forEach(item => {\n  brandMap[item.json.id] = item.json.name;\n});\n\nconst planMap = {};\nprofiles.forEach(item => {\n  planMap[item.json.id] = item.json.plan;\n});\n\n// Merge data\nreturn configs.map(item => ({\n  json: {\n    ...item.json,\n    brand_name: brandMap[item.json.brand_id] || 'Unknown Brand',\n    user_plan: planMap[item.json.user_id] || 'free'\n  }\n}));"
-      },
-      "id": "merge-config-data",
-      "name": "Merge Config Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1450, 200]
     },
     {
       "parameters": {
@@ -199,60 +132,19 @@
     },
     {
       "parameters": {
-        "operation": "create",
-        "tableId": "analysis_runs",
-        "dataMode": "defineInNode",
-        "fieldsToSend": {
-          "fields": [
-            {
-              "fieldName": "run_id",
-              "fieldValue": "={{ $json.run_id }}"
-            },
-            {
-              "fieldName": "brand_id",
-              "fieldValue": "={{ $json.brand_id }}"
-            },
-            {
-              "fieldName": "brand_name",
-              "fieldValue": "={{ $json.brand_name }}"
-            },
-            {
-              "fieldName": "topic",
-              "fieldValue": "={{ $json.topic }}"
-            },
-            {
-              "fieldName": "user_id",
-              "fieldValue": "={{ $json.user_id }}"
-            },
-            {
-              "fieldName": "ai_engine",
-              "fieldValue": "={{ $json.ai_engine }}"
-            },
-            {
-              "fieldName": "status",
-              "fieldValue": "pending"
-            },
-            {
-              "fieldName": "monitoring_config_id",
-              "fieldValue": "={{ $json.config_id }}"
-            },
-            {
-              "fieldName": "created_at",
-              "fieldValue": "={{ $json.timestamp }}"
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "INSERT INTO analysis_runs (\n  run_id,\n  brand_id,\n  brand_name,\n  topic,\n  user_id,\n  ai_engine,\n  status,\n  monitoring_config_id,\n  created_at\n) VALUES (\n  '{{ $json.run_id }}',\n  '{{ $json.brand_id }}',\n  '{{ $json.brand_name }}',\n  '{{ $json.topic }}',\n  '{{ $json.user_id }}',\n  '{{ $json.ai_engine }}',\n  'pending',\n  '{{ $json.config_id }}',\n  '{{ $json.timestamp }}'\n)",
         "options": {}
       },
       "id": "create-run-record",
       "name": "Create Run Record",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
       "position": [2250, 80],
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase Postgres"
         }
       },
       "alwaysOutputData": true,
@@ -364,34 +256,19 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "monitoring_configs",
-        "filterType": "string",
-        "filters": "id=eq.{{ $('Expand Engines').item.json.config_id }}",
-        "dataMode": "defineInNode",
-        "fieldsToSend": {
-          "fields": [
-            {
-              "fieldName": "last_run_at",
-              "fieldValue": "={{ $now.toISO() }}"
-            },
-            {
-              "fieldName": "next_run_at",
-              "fieldValue": "={{ $now.plus({ days: $('Expand Engines').item.json.user_plan === 'free' ? 7 : 1 }).toISO() }}"
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "UPDATE monitoring_configs\nSET \n  last_run_at = NOW(),\n  next_run_at = NOW() + INTERVAL '{{ $('Expand Engines').item.json.user_plan === \"free\" ? 7 : 1 }} days'\nWHERE id = '{{ $('Expand Engines').item.json.config_id }}'",
         "options": {}
       },
       "id": "update-config-next-run",
       "name": "Update Next Run Time",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
       "position": [3450, -80],
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase Postgres"
         }
       },
       "alwaysOutputData": true,
@@ -409,42 +286,19 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "analysis_runs",
-        "filterType": "string",
-        "filters": "run_id=eq.{{ $('Expand Engines').item.json.run_id }}",
-        "dataMode": "defineInNode",
-        "fieldsToSend": {
-          "fields": [
-            {
-              "fieldName": "status",
-              "fieldValue": "failed"
-            },
-            {
-              "fieldName": "error_message",
-              "fieldValue": "={{ $json.errors[$json.errors.length - 1].error }}"
-            },
-            {
-              "fieldName": "retry_count",
-              "fieldValue": "3"
-            },
-            {
-              "fieldName": "updated_at",
-              "fieldValue": "={{ $now.toISO() }}"
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "UPDATE analysis_runs\nSET \n  status = 'failed',\n  error_message = '{{ $json.errors[$json.errors.length - 1].error }}',\n  retry_count = 3,\n  updated_at = NOW()\nWHERE run_id = '{{ $('Expand Engines').item.json.run_id }}'",
         "options": {}
       },
       "id": "mark-run-failed",
       "name": "Mark Run Failed",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
       "position": [3450, 80],
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "supabase_postgres",
+          "name": "Supabase Postgres"
         }
       },
       "alwaysOutputData": true,
@@ -579,58 +433,14 @@
       "main": [
         [
           {
-            "node": "Get Active Configs",
+            "node": "Get Configs Due to Run",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Active Configs": {
-      "main": [
-        [
-          {
-            "node": "Filter Configs Due Now",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter Configs Due Now": {
-      "main": [
-        [
-          {
-            "node": "Get Brand Names",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Brand Names": {
-      "main": [
-        [
-          {
-            "node": "Get User Plans",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get User Plans": {
-      "main": [
-        [
-          {
-            "node": "Merge Config Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Config Data": {
+    "Get Configs Due to Run": {
       "main": [
         [
           {
