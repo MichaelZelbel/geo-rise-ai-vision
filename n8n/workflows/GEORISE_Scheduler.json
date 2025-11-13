@@ -249,7 +249,9 @@
           "attemptToConvertTypes": false,
           "convertFieldsToString": true
         },
-        "options": {}
+        "options": {
+          "waitForCompletion": true
+        }
       },
       "id": "bd2e4fe7-9d43-46b5-9492-53724b2a8144",
       "name": "Execute Processor",
@@ -274,11 +276,11 @@
           "conditions": [
             {
               "id": "check-processor-success",
-              "leftValue": "={{ $json.error }}",
-              "rightValue": "",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "isEmpty"
+                "type": "boolean",
+                "operation": "true"
               }
             }
           ]

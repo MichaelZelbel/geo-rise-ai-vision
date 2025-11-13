@@ -476,6 +476,19 @@
         -816,
         -192
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Config').item.json;\nconst scores = $('Calculate Scores').item.json;\n\nreturn {\n  json: {\n    success: true,\n    run_id: config.runId,\n    total_queries: scores.total_queries,\n    total_mentions: scores.total_mentions,\n    visibility_score: scores.visibility_score,\n    mention_rate: scores.mention_rate,\n    completed_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "a7f3e5d9-8b2c-4f6a-9e1d-5c8a9b3d7e2f",
+      "name": "Return Success Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        32
+      ]
     }
   ],
   "pinData": {},
@@ -664,6 +677,17 @@
         [
           {
             "node": "Update Status Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Completed": {
+      "main": [
+        [
+          {
+            "node": "Return Success Response",
             "type": "main",
             "index": 0
           }
