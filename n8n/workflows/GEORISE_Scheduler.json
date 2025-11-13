@@ -6,30 +6,33 @@
         "rule": {
           "interval": [
             {
-              "field": "hours",
-              "hoursInterval": 1
+              "field": "hours"
             }
           ]
         }
       },
-      "id": "cron-trigger",
+      "id": "0393cc6d-167f-4ef6-a5b9-791f856d0f52",
       "name": "Run Every Hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [250, 300]
+      "position": [
+        -2800,
+        384
+      ]
     },
     {
       "parameters": {},
-      "id": "manual-trigger",
+      "id": "9f799c05-9be1-49dd-a9b5-b6de8e327924",
       "name": "Manual Trigger for Testing",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [250, 100]
+      "position": [
+        -2960,
+        192
+      ]
     },
     {
       "parameters": {
-        "mode": "manual",
-        "duplicateItem": false,
         "assignments": {
           "assignments": [
             {
@@ -57,107 +60,49 @@
               "value": "={{ $now.toISO() }}"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "init-stats",
+      "id": "e54c5c36-9f66-465a-8992-7986c052f285",
       "name": "Initialize Stats",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [450, 200]
+      "position": [
+        -2544,
+        288
+      ]
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "monitoring_configs",
-        "returnAll": true,
-        "filterType": "string",
-        "filters": "active=eq.true",
+        "operation": "executeQuery",
+        "query": "SELECT \n  mc.id as config_id,\n  mc.brand_id,\n  mc.user_id,\n  mc.topic,\n  mc.enabled_engines,\n  mc.frequency,\n  mc.last_run_at,\n  mc.next_run_at,\n  b.name as brand_name,\n  p.plan as user_plan\nFROM monitoring_configs mc\nJOIN brands b ON b.id = mc.brand_id\nJOIN profiles p ON p.id = mc.user_id\nWHERE mc.active = true\n  AND mc.next_run_at <= NOW()",
         "options": {}
       },
-      "id": "get-due-configs",
-      "name": "Get Active Configs",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [650, 200],
+      "id": "e837f493-2010-46c1-a795-a560397d28cd",
+      "name": "Get Configs Due to Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -2320,
+        288
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "8JtqZlIJ0j4maMrW",
+          "name": "Postgres Lovable Georise"
         }
-      },
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Filter configs that are due to run now\nconst items = $input.all();\nconst now = new Date();\n\nconst dueConfigs = items.filter(item => {\n  const nextRunAt = new Date(item.json.next_run_at);\n  return nextRunAt <= now;\n});\n\nif (dueConfigs.length === 0) {\n  return [];\n}\n\n// Also join with brands table data (brand_name) and profiles (plan)\n// For now return configs as-is, assuming brand_name exists in brands table\nreturn dueConfigs.map(item => ({\n  json: {\n    config_id: item.json.id,\n    brand_id: item.json.brand_id,\n    user_id: item.json.user_id,\n    topic: item.json.topic,\n    enabled_engines: item.json.enabled_engines,\n    frequency: item.json.frequency,\n    last_run_at: item.json.last_run_at,\n    next_run_at: item.json.next_run_at\n  }\n}));"
-      },
-      "id": "filter-due-configs",
-      "name": "Filter Configs Due Now",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [850, 200]
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "tableId": "brands",
-        "returnAll": true,
-        "filterType": "string",
-        "filters": "id=in.({{ $input.all().map(item => item.json.brand_id).join(',') }})",
-        "options": {}
-      },
-      "id": "get-brands",
-      "name": "Get Brand Names",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1050, 200],
-      "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
-        }
-      },
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "tableId": "profiles",
-        "returnAll": true,
-        "filterType": "string",
-        "filters": "id=in.({{ $('Filter Configs Due Now').all().map(item => item.json.user_id).join(',') }})",
-        "options": {}
-      },
-      "id": "get-user-plans",
-      "name": "Get User Plans",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1250, 200],
-      "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
-        }
-      },
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Merge configs with brand names and user plans\nconst configs = $('Filter Configs Due Now').all();\nconst brands = $('Get Brand Names').all();\nconst profiles = $('Get User Plans').all();\n\nif (configs.length === 0) {\n  return [];\n}\n\n// Create lookup maps\nconst brandMap = {};\nbrands.forEach(item => {\n  brandMap[item.json.id] = item.json.name;\n});\n\nconst planMap = {};\nprofiles.forEach(item => {\n  planMap[item.json.id] = item.json.plan;\n});\n\n// Merge data\nreturn configs.map(item => ({\n  json: {\n    ...item.json,\n    brand_name: brandMap[item.json.brand_id] || 'Unknown Brand',\n    user_plan: planMap[item.json.user_id] || 'free'\n  }\n}));"
-      },
-      "id": "merge-config-data",
-      "name": "Merge Config Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1450, 200]
+      }
     },
     {
       "parameters": {
         "conditions": {
           "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
             "version": 2
           },
-          "combinator": "and",
           "conditions": [
             {
               "id": "check-has-configs",
@@ -168,103 +113,78 @@
                 "operation": "gt"
               }
             }
-          ]
-        }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "check-has-configs",
+      "id": "ba2a8066-b074-49dd-a568-870ba8342043",
       "name": "Has Configs?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1650, 200]
+      "position": [
+        -1888,
+        288
+      ]
     },
     {
       "parameters": {
         "options": {}
       },
-      "id": "loop-configs",
+      "id": "bc8aa4d9-8897-4902-a556-fb564dc01cfd",
       "name": "Loop Through Configs",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1850, 80]
+      "position": [
+        -1488,
+        48
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Get current config\nconst config = $json;\nconst stats = $('Initialize Stats').item.json;\n\n// Expand engines array into separate items\nconst engines = config.enabled_engines || ['perplexity'];\n\nreturn engines.map(engine => ({\n  json: {\n    config_id: config.config_id,\n    brand_id: config.brand_id,\n    brand_name: config.brand_name,\n    topic: config.topic,\n    user_id: config.user_id,\n    user_plan: config.user_plan,\n    ai_engine: engine,\n    run_id: `run_${engine}_${Date.now()}_${config.brand_id}`,\n    timestamp: new Date().toISOString(),\n    errorCount: stats.errorCount,\n    successCount: stats.successCount,\n    errors: stats.errors\n  }\n}));"
       },
-      "id": "expand-engines",
+      "id": "bbbe2ff2-3ff1-4a56-b72d-ca3fa15e5b9c",
       "name": "Expand Engines",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2050, 80]
+      "position": [
+        -1056,
+        -32
+      ]
     },
     {
       "parameters": {
-        "operation": "create",
-        "tableId": "analysis_runs",
-        "dataMode": "defineInNode",
-        "fieldsToSend": {
-          "fields": [
-            {
-              "fieldName": "run_id",
-              "fieldValue": "={{ $json.run_id }}"
-            },
-            {
-              "fieldName": "brand_id",
-              "fieldValue": "={{ $json.brand_id }}"
-            },
-            {
-              "fieldName": "brand_name",
-              "fieldValue": "={{ $json.brand_name }}"
-            },
-            {
-              "fieldName": "topic",
-              "fieldValue": "={{ $json.topic }}"
-            },
-            {
-              "fieldName": "user_id",
-              "fieldValue": "={{ $json.user_id }}"
-            },
-            {
-              "fieldName": "ai_engine",
-              "fieldValue": "={{ $json.ai_engine }}"
-            },
-            {
-              "fieldName": "status",
-              "fieldValue": "pending"
-            },
-            {
-              "fieldName": "monitoring_config_id",
-              "fieldValue": "={{ $json.config_id }}"
-            },
-            {
-              "fieldName": "created_at",
-              "fieldValue": "={{ $json.timestamp }}"
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "INSERT INTO analysis_runs (\n  run_id,\n  brand_id,\n  brand_name,\n  topic,\n  user_id,\n  ai_engine,\n  status,\n  monitoring_config_id,\n  created_at\n) VALUES (\n  '{{ $json.run_id }}',\n  '{{ $json.brand_id }}',\n  '{{ $json.brand_name }}',\n  '{{ $json.topic }}',\n  '{{ $json.user_id }}',\n  '{{ $json.ai_engine }}',\n  'pending',\n  '{{ $json.config_id }}',\n  '{{ $json.timestamp }}'\n)",
         "options": {}
       },
-      "id": "create-run-record",
+      "id": "daed71f6-fda7-4f51-a37d-964eb0d5e662",
       "name": "Create Run Record",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [2250, 80],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -848,
+        -48
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "8JtqZlIJ0j4maMrW",
+          "name": "Postgres Lovable Georise"
         }
       },
-      "alwaysOutputData": true,
       "continueOnFail": true
     },
     {
       "parameters": {
         "conditions": {
           "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
             "version": 2
           },
-          "combinator": "and",
           "conditions": [
             {
               "id": "check-create-success",
@@ -275,14 +195,19 @@
                 "operation": "isEmpty"
               }
             }
-          ]
-        }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "check-run-created",
+      "id": "457171c7-a4ac-4ed7-84d7-81ea42aab98d",
       "name": "Run Created?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [2450, 80]
+      "position": [
+        -640,
+        -48
+      ]
     },
     {
       "parameters": {
@@ -295,36 +220,49 @@
               "value": "={{ $json.ai_engine === 'perplexity' ? 'GEORISE Analysis Processor' : 'GEORISE_Processor_' + $json.ai_engine }}"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "select-processor",
+      "id": "fbe3ba7c-e97f-4597-b2c4-4ba9e46fa1c3",
       "name": "Select Processor",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2650, 0]
+      "position": [
+        -416,
+        -64
+      ]
     },
     {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
+          "value": "HVpkPV4tbw10G82z",
           "mode": "list",
-          "value": "",
-          "cachedResultName": "={{ $json.processorWorkflow }}"
+          "cachedResultUrl": "/workflow/HVpkPV4tbw10G82z",
+          "cachedResultName": "GEORISE Analysis Processor"
         },
-        "options": {
-          "waitForCompletion": true
-        }
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
       },
-      "id": "execute-processor",
+      "id": "bd2e4fe7-9d43-46b5-9492-53724b2a8144",
       "name": "Execute Processor",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [2850, 0],
-      "continueOnFail": true,
+      "position": [
+        -192,
+        -64
+      ],
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 5000
+      "waitBetweenTries": 5000,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -344,147 +282,137 @@
               }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "check-processor-success",
+      "id": "eb741a57-25c1-4415-8a78-067cc759a21d",
       "name": "Processor Success?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [3050, 0]
+      "position": [
+        0,
+        80
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Increment success count\nconst prevData = $('Expand Engines').item.json;\nreturn {\n  json: {\n    ...prevData,\n    successCount: prevData.successCount + 1,\n    lastSuccess: {\n      brand: prevData.brand_name,\n      topic: prevData.topic,\n      engine: prevData.ai_engine,\n      runId: prevData.run_id\n    }\n  }\n};"
       },
-      "id": "increment-success",
+      "id": "f65c7f00-c6f5-4e96-85d3-a4b87137ccab",
       "name": "Increment Success",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3250, -80]
+      "position": [
+        208,
+        0
+      ]
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "monitoring_configs",
-        "filterType": "string",
-        "filters": "id=eq.{{ $('Expand Engines').item.json.config_id }}",
-        "dataMode": "defineInNode",
-        "fieldsToSend": {
-          "fields": [
-            {
-              "fieldName": "last_run_at",
-              "fieldValue": "={{ $now.toISO() }}"
-            },
-            {
-              "fieldName": "next_run_at",
-              "fieldValue": "={{ $now.plus({ days: $('Expand Engines').item.json.user_plan === 'free' ? 7 : 1 }).toISO() }}"
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "UPDATE monitoring_configs\nSET \n  last_run_at = NOW(),\n  next_run_at = NOW() + INTERVAL '{{ $('Expand Engines').item.json.user_plan === \"free\" ? 7 : 1 }} days'\nWHERE id = '{{ $('Expand Engines').item.json.config_id }}'",
         "options": {}
       },
-      "id": "update-config-next-run",
+      "id": "8e1e2da2-2fde-4aa7-a591-dfa0ffa5dcea",
       "name": "Update Next Run Time",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [3450, -80],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        416,
+        0
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "8JtqZlIJ0j4maMrW",
+          "name": "Postgres Lovable Georise"
         }
       },
-      "alwaysOutputData": true,
       "continueOnFail": true
     },
     {
       "parameters": {
         "jsCode": "// Log error and increment count\nconst prevData = $('Expand Engines').item.json;\nconst error = $json.error || { message: 'Processor execution failed' };\n\nconst newError = {\n  brand: prevData.brand_name,\n  topic: prevData.topic,\n  engine: prevData.ai_engine,\n  runId: prevData.run_id,\n  error: error.message || JSON.stringify(error),\n  timestamp: new Date().toISOString()\n};\n\nreturn {\n  json: {\n    ...prevData,\n    errorCount: prevData.errorCount + 1,\n    errors: [...prevData.errors, newError]\n  }\n};"
       },
-      "id": "log-processor-error",
+      "id": "0c14031a-abe8-4496-88d9-3b7ea58e659e",
       "name": "Log Processor Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3250, 80]
+      "position": [
+        208,
+        160
+      ]
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "analysis_runs",
-        "filterType": "string",
-        "filters": "run_id=eq.{{ $('Expand Engines').item.json.run_id }}",
-        "dataMode": "defineInNode",
-        "fieldsToSend": {
-          "fields": [
-            {
-              "fieldName": "status",
-              "fieldValue": "failed"
-            },
-            {
-              "fieldName": "error_message",
-              "fieldValue": "={{ $json.errors[$json.errors.length - 1].error }}"
-            },
-            {
-              "fieldName": "retry_count",
-              "fieldValue": "3"
-            },
-            {
-              "fieldName": "updated_at",
-              "fieldValue": "={{ $now.toISO() }}"
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "UPDATE analysis_runs\nSET \n  status = 'failed',\n  error_message = '{{ $json.errors[$json.errors.length - 1].error }}',\n  retry_count = 3,\n  updated_at = NOW()\nWHERE run_id = '{{ $('Expand Engines').item.json.run_id }}'",
         "options": {}
       },
-      "id": "mark-run-failed",
+      "id": "7285f7df-ef1f-4e91-a9f9-01942350996e",
       "name": "Mark Run Failed",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [3450, 80],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        416,
+        160
+      ],
+      "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "lovable_supabase",
-          "name": "Lovable Supabase"
+        "postgres": {
+          "id": "8JtqZlIJ0j4maMrW",
+          "name": "Postgres Lovable Georise"
         }
       },
-      "alwaysOutputData": true,
       "continueOnFail": true
     },
     {
       "parameters": {
         "jsCode": "// Log error for run record creation failure\nconst prevData = $('Expand Engines').item.json;\nconst error = $json.error || { message: 'Failed to create run record' };\n\nconst newError = {\n  brand: prevData.brand_name,\n  topic: prevData.topic,\n  engine: prevData.ai_engine,\n  error: `DB Error: ${error.message || JSON.stringify(error)}`,\n  timestamp: new Date().toISOString()\n};\n\nreturn {\n  json: {\n    ...prevData,\n    errorCount: prevData.errorCount + 1,\n    errors: [...prevData.errors, newError]\n  }\n};"
       },
-      "id": "log-create-error",
+      "id": "98e2ce70-657e-4bf9-b728-102de28d24e8",
       "name": "Log Create Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2650, 160]
+      "position": [
+        -400,
+        304
+      ]
     },
     {
       "parameters": {},
-      "id": "merge-results",
+      "id": "765dcf92-b273-49fd-91c8-272841e1a158",
       "name": "Merge Results",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
-      "position": [3650, 0]
+      "position": [
+        608,
+        80
+      ]
     },
     {
       "parameters": {},
-      "id": "no-configs-end",
+      "id": "353a95eb-bdd5-45e6-b6f2-c13a6330895c",
       "name": "No Configs - End",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1850, 320]
+      "position": [
+        -1200,
+        400
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Aggregate all results after loop completes\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [{\n    json: {\n      totalRuns: 0,\n      successCount: 0,\n      errorCount: 0,\n      errors: [],\n      message: 'No configurations processed'\n    }\n  }];\n}\n\n// Get the last item which has accumulated stats\nconst lastItem = items[items.length - 1].json;\n\nreturn [{\n  json: {\n    totalRuns: lastItem.successCount + lastItem.errorCount,\n    successCount: lastItem.successCount,\n    errorCount: lastItem.errorCount,\n    errors: lastItem.errors || [],\n    runStartedAt: $('Initialize Stats').item.json.runStartedAt,\n    runCompletedAt: new Date().toISOString()\n  }\n}];"
       },
-      "id": "aggregate-results",
+      "id": "c230eb11-8cb5-4934-8bf0-a1198cd63bab",
       "name": "Aggregate Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3850, 0]
+      "position": [
+        816,
+        80
+      ]
     },
     {
       "parameters": {
@@ -504,23 +432,30 @@
               }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "check-has-errors",
+      "id": "3a69ce23-eb98-40b9-a327-7b80dad5da6b",
       "name": "Has Errors?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [4050, 0]
+      "position": [
+        1008,
+        80
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Format email body with error details\nconst data = $json;\n\nconst errorList = data.errors.map((err, idx) => \n  `${idx + 1}. Brand: ${err.brand}\\n   Topic: ${err.topic}\\n   Engine: ${err.engine}\\n   Error: ${err.error}\\n   Time: ${err.timestamp}\\n`\n).join('\\n');\n\nconst emailBody = `\nGEORISE Scheduler Run Failed\n=============================\n\nRun Summary:\n- Started: ${data.runStartedAt}\n- Completed: ${data.runCompletedAt}\n- Total Runs: ${data.totalRuns}\n- Successful: ${data.successCount}\n- Failed: ${data.errorCount}\n\nErrors:\n${errorList}\n\n---\nGEORISE Automated Scheduler\n`;\n\nreturn {\n  json: {\n    ...data,\n    emailSubject: `⚠️ GEORISE Scheduler: ${data.errorCount} Failed Analyses`,\n    emailBody: emailBody\n  }\n};"
       },
-      "id": "format-error-email",
+      "id": "8371db40-661a-45d9-a6c3-fb24a6966bba",
       "name": "Format Error Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4250, -80]
+      "position": [
+        1216,
+        0
+      ]
     },
     {
       "parameters": {
@@ -530,28 +465,59 @@
         "message": "={{ $json.emailBody }}",
         "options": {}
       },
-      "id": "send-error-email",
+      "id": "71a13737-b0f3-470d-98ef-4f81732bbad0",
       "name": "Send Error Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [4450, -80],
+      "position": [
+        1408,
+        0
+      ],
+      "webhookId": "cb2cdd5a-7ba4-4a5c-a878-51ca1fa0a769",
       "credentials": {
         "gmailOAuth2": {
-          "id": "gmail_oauth",
-          "name": "Gmail OAuth"
+          "id": "i5orzzYCOIwoyw44",
+          "name": "Gmail account"
         }
       },
       "continueOnFail": true
     },
     {
       "parameters": {},
-      "id": "final-end",
+      "id": "225c54af-d9fd-489f-ba1b-1a9c4fff9c11",
       "name": "End",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [4650, 0]
+      "position": [
+        1616,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO monitoring_configs (\n  brand_id,\n  user_id,\n  topic,\n  enabled_engines,\n  frequency,\n  active,\n  next_run_at\n) VALUES (\n  'bb64f5e7-23e3-48ee-be1d-698201ffad4f'::uuid,\n  '7f078493-f4de-491b-8156-6f7f8f425936'::uuid,\n  'Test ' || TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'),\n  ARRAY['perplexity']::text[],\n  'daily',\n  true,\n  NOW() - INTERVAL '1 hour'\n)\nON CONFLICT (brand_id, topic) \nDO UPDATE SET \n  next_run_at = NOW() - INTERVAL '1 hour',\n  active = true;",
+        "options": {}
+      },
+      "id": "b24f0d30-9570-4666-943c-4a3f43632b4b",
+      "name": "Create Test DB Entry",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -2768,
+        192
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "8JtqZlIJ0j4maMrW",
+          "name": "Postgres Lovable Georise"
+        }
+      },
+      "continueOnFail": true
     }
   ],
+  "pinData": {},
   "connections": {
     "Run Every Hour": {
       "main": [
@@ -568,7 +534,7 @@
       "main": [
         [
           {
-            "node": "Initialize Stats",
+            "node": "Create Test DB Entry",
             "type": "main",
             "index": 0
           }
@@ -579,58 +545,14 @@
       "main": [
         [
           {
-            "node": "Get Active Configs",
+            "node": "Get Configs Due to Run",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Active Configs": {
-      "main": [
-        [
-          {
-            "node": "Filter Configs Due Now",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter Configs Due Now": {
-      "main": [
-        [
-          {
-            "node": "Get Brand Names",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Brand Names": {
-      "main": [
-        [
-          {
-            "node": "Get User Plans",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get User Plans": {
-      "main": [
-        [
-          {
-            "node": "Merge Config Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Config Data": {
+    "Get Configs Due to Run": {
       "main": [
         [
           {
@@ -663,14 +585,14 @@
       "main": [
         [
           {
-            "node": "Expand Engines",
+            "node": "End",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Aggregate Results",
+            "node": "Expand Engines",
             "type": "main",
             "index": 0
           }
@@ -873,15 +795,28 @@
           }
         ]
       ]
+    },
+    "Create Test DB Entry": {
+      "main": [
+        [
+          {
+            "node": "Initialize Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "georise-scheduler-v1",
+  "versionId": "470b2f16-b53b-49b1-b853-100a66c8dfc0",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "n8n-georise"
-  }
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "vKuJpJaXdibnOyzl",
+  "tags": []
 }
