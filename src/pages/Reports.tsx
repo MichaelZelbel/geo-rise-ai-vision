@@ -79,57 +79,45 @@ const Reports = () => {
 
   const fetchAnalysisData = async (brandId: string) => {
     try {
-      // Fetch all analyses for this brand
-      const { data: analyses } = await supabase
-        .from("analyses")
+      // Fetch analysis runs directly from analysis_runs table
+      const { data: runs, error } = await supabase
+        .from("analysis_runs")
         .select("*")
         .eq("brand_id", brandId)
-        .order("occurred_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
-      if (!analyses || analyses.length === 0) {
+      if (error) {
+        console.error("Error fetching analysis runs:", error);
         setAnalysisRuns([]);
         return;
       }
 
-      // Group by run_id
-      const runMap = new Map<string, any[]>();
-      analyses.forEach(analysis => {
-        if (!runMap.has(analysis.run_id)) {
-          runMap.set(analysis.run_id, []);
-        }
-        runMap.get(analysis.run_id)!.push(analysis);
-      });
-
-      // Calculate stats for each run
-      const runs: AnalysisRun[] = Array.from(runMap.entries()).map(([runId, runAnalyses]) => {
-        const mentions = runAnalyses.filter(a => a.position !== null).length;
-        const totalQueries = new Set(runAnalyses.map(a => a.query)).size;
-        const date = runAnalyses[0].occurred_at;
-        
-        return {
-          runId,
-          date,
-          score: selectedBrand.visibility_score,
-          mentions: `${mentions}/${totalQueries}`,
-          totalQueries,
-          mentionCount: mentions,
-        };
-      });
-
-      // Calculate changes
-      for (let i = 0; i < runs.length - 1; i++) {
-        runs[i].change = runs[i].score - runs[i + 1].score;
+      if (!runs || runs.length === 0) {
+        setAnalysisRuns([]);
+        return;
       }
 
-      setAnalysisRuns(runs);
+      // Map to AnalysisRun format
+      const formattedRuns: AnalysisRun[] = runs.map((run, index) => ({
+        runId: run.run_id,
+        date: run.created_at,
+        score: run.visibility_score || 0,
+        mentions: `${run.total_mentions || 0}/${run.total_queries || 20}`,
+        totalQueries: run.total_queries || 20,
+        mentionCount: run.total_mentions || 0,
+        change: index < runs.length - 1 ? (run.visibility_score || 0) - (runs[index + 1].visibility_score || 0) : undefined,
+      }));
+
+      setAnalysisRuns(formattedRuns);
 
       // Fetch insights for latest run
-      if (runs.length > 0) {
+      if (formattedRuns.length > 0) {
         const { data: insightsData } = await supabase
           .from("insights")
           .select("*")
           .eq("brand_id", brandId)
-          .eq("run_id", runs[0].runId);
+          .order("created_at", { ascending: false })
+          .limit(10);
 
         if (insightsData) {
           setInsights(insightsData);
@@ -137,6 +125,7 @@ const Reports = () => {
       }
     } catch (error) {
       console.error("Error fetching analysis data:", error);
+      setAnalysisRuns([]);
     }
   };
 
