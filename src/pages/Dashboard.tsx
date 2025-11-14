@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [mentionedEngines, setMentionedEngines] = useState<string[]>([]);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [runningAnalysisId, setRunningAnalysisId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -72,6 +73,42 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [topicParam, brandParam]);
 
+  // Real-time subscription for analysis status updates
+  useEffect(() => {
+    if (!runningAnalysisId || !user?.id) return;
+    
+    console.log('Subscribing to analysis status for runId:', runningAnalysisId);
+    
+    const subscription = supabase
+      .channel(`analysis_run_${runningAnalysisId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'analysis_runs',
+        filter: `run_id=eq.${runningAnalysisId}`
+      }, (payload) => {
+        const status = payload.new.status;
+        console.log('Analysis status updated:', status);
+        
+        if (status === 'completed') {
+          toast.success('Analysis completed! Refreshing dashboard...');
+          loadDashboardData(user.id);
+          setRunningAnalysisId(null);
+        } else if (status === 'failed') {
+          toast.error('Analysis failed. Please try again.');
+          setRunningAnalysisId(null);
+        } else if (status === 'processing') {
+          toast.info('Analysis in progress...');
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      console.log('Unsubscribing from analysis status');
+      subscription.unsubscribe();
+    };
+  }, [runningAnalysisId, user?.id]);
+
   const createBrand = async (userId: string, brandName: string, topicName: string) => {
     try {
       const { data: newBrand, error } = await supabase.from("brands").insert({
@@ -105,8 +142,11 @@ const Dashboard = () => {
               console.error("Analysis error:", error);
               toast.error(error.message || "Failed to start analysis.");
             } else {
-              toast.success("Analysis started! We'll refresh your dashboard shortly.");
-              setTimeout(() => loadDashboardData(userId), 3000);
+              const runId = data?.data?.runId || data?.runId;
+              if (runId) {
+                setRunningAnalysisId(runId);
+              }
+              toast.success("Analysis started! We'll refresh your dashboard when complete.");
             }
           })
           .catch((err) => {
@@ -214,6 +254,7 @@ const Dashboard = () => {
                 brandId={brand.id}
                 brandName={brand.name}
                 topic={brand.topic}
+                onAnalysisStarted={(runId) => setRunningAnalysisId(runId)}
               />
             </div>
 
