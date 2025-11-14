@@ -1720,6 +1720,413 @@ Connect back to itself for looping:
 **Problem:** Webhook node missing required parameters
 **Solution:** Always include `responseMode` and `webhookId` in webhook nodes
 
+## N8N Best Practices - Practical Production Learnings
+
+These are battle-tested patterns discovered during production workflow development that prevent common runtime errors and maintenance headaches.
+
+### Generic Webhook Responses (Trigger-Agnostic Pattern)
+
+**Problem:** Webhook response nodes break when workflow is tested with Manual Trigger instead of Webhook Trigger, causing "No path back to referenced node" errors.
+
+**BAD - Hard-coded node references in response:**
+```javascript
+// In "Respond to Webhook" node
+responseBody: {{ JSON.stringify({
+  success: true,
+  runId: $('Config').item.json.runId,
+  message: 'Analysis started'
+}) }}
+```
+
+This fails when:
+- Testing with Manual Trigger (Config node might not be in execution path)
+- Node names change during refactoring
+- Multiple triggers feed into the same response node
+
+**GOOD - Generic reference to merged data:**
+```javascript
+// In "Respond to Webhook" node (after Merge All Paths node)
+responseBody: {{ JSON.stringify($json) }}
+```
+
+**Why this works:**
+- After a Merge node, `$json` contains your complete structured response
+- No hard-coded node name references that break during testing
+- Works identically whether triggered by webhook, manual trigger, or schedule
+- Resilient to workflow refactoring
+
+**Pattern:**
+```
+Success Path → Set Success Response ↘
+                                     → Merge All Paths → Respond to Webhook
+Error Paths  → Set Error Responses  ↗
+
+Respond to Webhook: responseBody = {{ JSON.stringify($json) }}
+```
+
+### Use Native Error Outputs Instead of IF Nodes
+
+**Problem:** Adding IF nodes after every database/API operation to check for `$json.error` is verbose and cluttered.
+
+**BAD - Manual error checking with IF nodes:**
+```json
+{
+  "nodes": [
+    {
+      "name": "Database Insert",
+      "type": "n8n-nodes-base.postgres",
+      "continueOnFail": true
+    },
+    {
+      "name": "Check If Insert Failed",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "string": [{
+            "value1": "={{ $json.error }}",
+            "operation": "isEmpty"
+          }]
+        }
+      }
+    }
+  ]
+}
+```
+
+**GOOD - Use native error output:**
+```json
+{
+  "name": "Database Insert",
+  "type": "n8n-nodes-base.postgres",
+  "parameters": {
+    "operation": "insert"
+  },
+  "onError": "continueErrorOutput"
+}
+```
+
+**Configuration:**
+- Set node parameter: **On Error** → `Continue (using error output)`
+- This creates **two outputs** on the node:
+  - **Top output (main)**: Successful executions
+  - **Bottom output (error)**: Failed executions
+
+**Benefits:**
+- Cleaner workflow structure
+- More n8n-native approach
+- Explicit visual branching (success/error paths)
+- No need for IF nodes to check `$json.error`
+
+**Pattern:**
+```
+                     ┌→ Success Path (top output) → Next Step
+Database/API Node ──┤
+                     └→ Error Path (bottom output) → Set Error Response
+```
+
+**Supported nodes:**
+- PostgreSQL, MySQL, MongoDB (database operations)
+- HTTP Request
+- Perplexity, OpenAI (AI services)
+- Most external API nodes
+
+### Correct Object Field Syntax in Set Nodes (v3.4+)
+
+**Problem:** In Set node v3.4+, when setting a field type as "Object", pasting JSON strings causes validation errors: `'error' expects a object but we got '{"key": "value"}'`
+
+**BAD - JSON string in Object field:**
+```json
+{
+  "name": "Set Error Response",
+  "type": "n8n-nodes-base.set",
+  "parameters": {
+    "assignments": {
+      "assignments": [
+        {
+          "name": "error",
+          "type": "object",
+          "value": {
+            "message": "Failed to process",
+            "timestamp": "={{ $now.toISO() }}"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+This syntax causes: `'error' expects a object but we got '...'` error.
+
+**GOOD - Proper object expression syntax:**
+```json
+{
+  "name": "Set Error Response",
+  "type": "n8n-nodes-base.set",
+  "parameters": {
+    "assignments": {
+      "assignments": [
+        {
+          "name": "error",
+          "type": "object",
+          "value": "={{ { message: 'Failed to process', timestamp: $now.toISO() } }}"
+        }
+      ]
+    }
+  }
+}
+```
+
+**In the n8n UI (for Object-type fields):**
+
+```javascript
+// Wrapper: {{ { ... } }}
+// NO leading "=" (the field handles expressions automatically)
+
+{{
+  {
+    "message": "Failed to process",
+    "code": "ERROR_CODE",
+    "timestamp": $now.toISO(),
+    "isRetryable": true,
+    "details": $json.error
+  }
+}}
+```
+
+**Critical Rules:**
+1. **Wrapper**: `{{ { ... } }}` - Double curly braces around single-brace object
+2. **No leading `=`**: The Object field in n8n UI doesn't need `=` prefix
+3. **String literals**: Use quotes → `"ERROR_CODE"`
+4. **Expressions**: NO quotes, NO `={{` → just `$now.toISO()` or `$json.error`
+5. **Dynamic strings**: Use template literals → `` `Failed on ${$json.nodeName}` ``
+
+**Examples:**
+
+```javascript
+// Simple object
+{{
+  {
+    "executionId": $execution.id,
+    "workflowName": $workflow.name,
+    "timestamp": $now.toISO()
+  }
+}}
+
+// Object with nested data
+{{
+  {
+    "runId": $('Config').item.json.runId,
+    "status": "completed",
+    "results": $json.data,
+    "completedAt": $now.toISO()
+  }
+}}
+
+// Object with dynamic message using template literal
+{{
+  {
+    "message": `Failed to process brand: ${$('Config').item.json.brandName}`,
+    "code": "PROCESSING_ERROR",
+    "timestamp": $now.toISO()
+  }
+}}
+
+// Complex nested object
+{{
+  {
+    "success": false,
+    "error": {
+      "message": $json.error?.message || "Unknown error",
+      "code": "DATABASE_ERROR",
+      "isRetryable": true
+    },
+    "metadata": {
+      "executionId": $execution.id,
+      "duration": Math.round(($now.toMillis() - new Date($('Config').item.json.executionStart).getTime()) / 1000)
+    }
+  }
+}}
+```
+
+**What NOT to do:**
+```javascript
+// ❌ Wrong - Extra ={{ inside object
+{{
+  {
+    "timestamp": "={{ $now.toISO() }}"  // Don't do this!
+  }
+}}
+
+// ❌ Wrong - Missing wrapper braces
+{
+  "timestamp": $now.toISO()
+}
+
+// ❌ Wrong - Leading = in UI field
+={{
+  {
+    "timestamp": $now.toISO()
+  }
+}}
+```
+
+### Avoid Hard-Coded Node References in Final Response Nodes
+
+**Problem:** Final response nodes that reference specific upstream nodes break when:
+- Workflow structure changes
+- Nodes are renamed
+- Testing with different triggers
+
+**BAD - Direct node references:**
+```javascript
+// In final Respond to Webhook node
+{
+  "runId": $('Validate and Prepare').item.json.runId,
+  "status": $('Config').item.json.status
+}
+```
+
+**GOOD - Reference merged data:**
+```javascript
+// After Merge All Paths node
+$json  // Contains all structured response data
+```
+
+**Pattern:**
+```
+Set Success Response (creates: {success: true, data: {...}})    ↘
+                                                                 → Merge All Paths ($json now has complete response)
+Set Error Response (creates: {success: false, error: {...}})    ↗                              ↓
+                                                                                     Respond: {{ JSON.stringify($json) }}
+```
+
+**Why this matters:**
+- **Resilient to refactoring**: Node names can change
+- **Works with all triggers**: Manual, webhook, schedule
+- **Single source of truth**: Merged data is the canonical response
+- **Maintainable**: One place to look for response structure
+
+### Use Real Database IDs in Test Data
+
+**Problem:** Test workflows fail with foreign key constraint errors when using fake UUIDs.
+
+**BAD - Fake test IDs:**
+```javascript
+// In Config node
+{
+  "name": "brandId",
+  "value": "00000000-0000-4000-8000-000000000001"  // Doesn't exist in database!
+}
+```
+
+**Error:**
+```
+insert or update on table "analysis_runs" violates foreign key constraint "fk_analysis_runs_brand"
+```
+
+**GOOD - Real database IDs:**
+```javascript
+// Option 1: Query your database first
+// In Supabase/PostgreSQL SQL editor:
+SELECT id, name FROM brands LIMIT 1;
+
+// Use real ID in Config node
+{
+  "name": "brandId",
+  "value": "abc123-real-uuid-from-database"
+}
+
+// Option 2: For Manual Trigger testing, fetch a real brand first
+```
+
+**Best Practice Pattern:**
+```json
+{
+  "nodes": [
+    {
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger"
+    },
+    {
+      "name": "Get Test Brand",
+      "type": "n8n-nodes-base.postgres",
+      "parameters": {
+        "operation": "select",
+        "table": "brands",
+        "limit": 1
+      }
+    },
+    {
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "brandId",
+              "value": "={{ $('Get Test Brand').item.json.id }}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+### Bonus: Testing Webhook Workflows with Manual Trigger
+
+**Problem:** Webhook-only workflows require external requests to test, slowing development.
+
+**Solution:** Dual-trigger pattern with Config node bridge:
+
+```json
+{
+  "nodes": [
+    {
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [250, 100]
+    },
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [250, 300]
+    },
+    {
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [450, 200],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "brandId",
+              "value": "={{ $json.body ? $json.body.brandId : 'test-brand-123' }}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [[{"node": "Config", "type": "main", "index": 0}]]
+    },
+    "Webhook Trigger": {
+      "main": [[{"node": "Config", "type": "main", "index": 0}]]
+    }
+  }
+}
+```
+
+**Pattern:**
+- Both triggers connect to same Config node
+- Config node uses ternary: `$json.body ? $json.body.brandId : 'test-value'`
+- Manual trigger provides test data directly
+- Webhook trigger extracts from `$json.body`
+
 ## Workflow Import Checklist
 
 Before finalizing any n8n workflow JSON:
