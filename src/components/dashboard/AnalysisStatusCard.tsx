@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { triggerAnalysis } from "@/lib/n8nService";
 
 interface AnalysisStatusCardProps {
   hasAnalysis: boolean;
@@ -42,42 +43,46 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: A
         return;
       }
 
-      const p = supabase.functions.invoke('run-analysis', {
-        body: {
-          brandId,
-          brandName,
-          topic,
-          userId: user.id
-        }
+      // Use n8n webhook to trigger analysis
+      const runId = await triggerAnalysis({
+        brandId,
+        brandName,
+        topic,
+        userId: user.id
       });
 
       toast({
         title: "Analysis Started",
-        description: "Your visibility analysis is running. Results will be ready in a few minutes.",
+        description: `Analysis ${runId} is running. Results will be ready in a few minutes.`,
       });
 
-      p.then(({ error }) => {
-        if (error) {
-          console.error('Analysis error:', error);
-          toast({
-            title: "Error",
-            description: error.message || "Failed to start analysis",
-            variant: "destructive",
-          });
-        }
-      }).catch((err) => {
-        console.error('Analysis request failed:', err);
-        toast({
-          title: "Error",
-          description: err?.message || "Failed to send request to analysis function.",
-          variant: "destructive",
-        });
-      });
     } catch (error: any) {
       console.error('Analysis error:', error);
+      
+      // Parse structured error response
+      let errorMessage = error.message || "Failed to start analysis";
+      let description = errorMessage;
+      
+      // Check if it's a structured error from n8n
+      if (error.error?.code) {
+        switch(error.error.code) {
+          case 'VALIDATION_ERROR':
+            description = "Please check that all brand information is filled in correctly.";
+            break;
+          case 'DATABASE_ERROR':
+            description = "Database error. Please try again in a moment.";
+            break;
+          case 'SUBWORKFLOW_ERROR':
+            description = "Analysis service error. Our team has been notified.";
+            break;
+          default:
+            description = errorMessage;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to start analysis",
+        description: description,
         variant: "destructive",
       });
     } finally {

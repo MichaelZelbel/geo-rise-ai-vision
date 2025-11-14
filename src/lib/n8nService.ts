@@ -15,9 +15,26 @@ interface TriggerAnalysisParams {
 
 interface TriggerAnalysisResponse {
   success: boolean;
-  runId: string;
-  message: string;
-  error?: string;
+  runId?: string; // Legacy support
+  message?: string; // Legacy support
+  data?: {
+    runId: string;
+    message: string;
+    brandId: string;
+    brandName: string;
+  };
+  error?: {
+    message: string;
+    code: string;
+    node?: string;
+    timestamp?: string;
+    isRetryable?: boolean;
+  } | string; // Support both structured and simple error
+  metadata?: {
+    executionId: string;
+    workflowName: string;
+    receivedData?: string;
+  };
 }
 
 /**
@@ -31,7 +48,7 @@ export async function triggerAnalysis(
   params: TriggerAnalysisParams
 ): Promise<string> {
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL ||
-                     'http://localhost:5678/webhook/georise-analysis-start';
+                     'https://n8n-georise.agentpool.cloud/webhook/georise-analysis-start';
 
   try {
     const response = await fetch(webhookUrl, {
@@ -54,11 +71,22 @@ export async function triggerAnalysis(
 
     const data: TriggerAnalysisResponse = await response.json();
 
-    if (!data.success || !data.runId) {
-      throw new Error(data.error || 'Failed to start analysis');
+    // Handle the structured response from the enhanced n8n workflow
+    if (!data.success) {
+      // Workflow returned an error (validation, database, subworkflow failure)
+      const errorMsg = typeof data.error === 'string' 
+        ? data.error 
+        : data.error?.message || 'Failed to start analysis';
+      throw new Error(errorMsg);
     }
 
-    return data.runId;
+    // Extract runId from the data object (new structure) or root (legacy)
+    const runId = data.data?.runId || data.runId;
+    if (!runId) {
+      throw new Error('No runId returned from analysis workflow');
+    }
+
+    return runId;
   } catch (error) {
     console.error('Failed to trigger analysis:', error);
 
@@ -79,7 +107,7 @@ export async function triggerAnalysis(
  */
 export async function checkN8nHealth(): Promise<boolean> {
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL ||
-                     'http://localhost:5678/webhook/georise-analysis-start';
+                     'https://n8n-georise.agentpool.cloud/webhook/georise-analysis-start';
 
   try {
     // Send OPTIONS request to check CORS and webhook availability
@@ -100,5 +128,5 @@ export async function checkN8nHealth(): Promise<boolean> {
  */
 export function getN8nWebhookUrl(): string {
   return import.meta.env.VITE_N8N_WEBHOOK_URL ||
-         'http://localhost:5678/webhook/georise-analysis-start';
+         'https://n8n-georise.agentpool.cloud/webhook/georise-analysis-start';
 }
