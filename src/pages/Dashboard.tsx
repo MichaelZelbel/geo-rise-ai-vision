@@ -38,6 +38,11 @@ const Dashboard = () => {
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [runningAnalysisId, setRunningAnalysisId] = useState<string | null>(null);
+  const [lastAnalysisRun, setLastAnalysisRun] = useState<{
+    date: string;
+    score: number;
+    mentions: number;
+  } | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -196,6 +201,23 @@ const Dashboard = () => {
         const engines = [...new Set(analysesData?.map((a) => a.ai_engine) || [])];
         setMentionedEngines(engines);
         setHasAnalysis(analysesData && analysesData.length > 0);
+
+        // Fetch latest analysis run for status card
+        const { data: latestRun } = await supabase
+          .from("analysis_runs")
+          .select("*")
+          .eq("brand_id", brandData.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestRun) {
+          setLastAnalysisRun({
+            date: latestRun.created_at,
+            score: latestRun.visibility_score || 0,
+            mentions: latestRun.total_mentions || 0,
+          });
+        }
       }
 
       setLoading(false);
@@ -255,6 +277,9 @@ const Dashboard = () => {
                 brandName={brand.name}
                 topic={brand.topic}
                 onAnalysisStarted={(runId) => setRunningAnalysisId(runId)}
+                lastRunDate={lastAnalysisRun?.date}
+                lastRunScore={lastAnalysisRun?.score}
+                lastRunMentions={lastAnalysisRun?.mentions}
               />
             </div>
 
