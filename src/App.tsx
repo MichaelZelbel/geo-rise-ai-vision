@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import SetupTestUsers from "./pages/SetupTestUsers";
 import GetCredentials from "./pages/GetCredentials";
 import Account from "./pages/Account";
+import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Cookies from "./pages/Cookies";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/setup-test-users" element={<SetupTestUsers />} />
           <Route path="/get-credentials" element={<GetCredentials />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
