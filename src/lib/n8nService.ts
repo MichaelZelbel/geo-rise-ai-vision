@@ -15,6 +15,7 @@ interface TriggerAnalysisParams {
 
 interface TriggerAnalysisResponse {
   success: boolean;
+  partialSuccess?: boolean; // True if at least one processor succeeded
   runId?: string; // Legacy support
   message?: string; // Legacy support
   data?: {
@@ -22,6 +23,20 @@ interface TriggerAnalysisResponse {
     message: string;
     brandId: string;
     brandName: string;
+    processors?: {
+      perplexityStatus: 'completed' | 'failed';
+      chatgptStatus: 'completed' | 'failed';
+      totalProcessors: number;
+      successfulProcessors: number;
+    };
+    results?: {
+      perplexity: any;
+      chatgpt: any;
+    };
+    errors?: {
+      perplexity: any;
+      chatgpt: any;
+    } | null;
   };
   error?: {
     message: string;
@@ -74,10 +89,18 @@ export async function triggerAnalysis(
     // Handle the structured response from the enhanced n8n workflow
     if (!data.success) {
       // Workflow returned an error (validation, database, subworkflow failure)
-      const errorMsg = typeof data.error === 'string' 
-        ? data.error 
+      const errorMsg = typeof data.error === 'string'
+        ? data.error
         : data.error?.message || 'Failed to start analysis';
       throw new Error(errorMsg);
+    }
+
+    // Warn if partial success (one processor failed)
+    if (data.partialSuccess) {
+      console.warn('Analysis started with partial success. Some AI engines may have failed:', {
+        processors: data.data?.processors,
+        errors: data.data?.errors
+      });
     }
 
     // Extract runId from the data object (new structure) or root (legacy)
