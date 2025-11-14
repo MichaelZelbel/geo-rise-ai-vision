@@ -12,9 +12,10 @@ interface AnalysisStatusCardProps {
   brandId?: string;
   brandName?: string;
   topic?: string;
+  onAnalysisStarted?: (runId: string) => void;
 }
 
-const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: AnalysisStatusCardProps) => {
+const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, onAnalysisStarted }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
@@ -51,9 +52,14 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic }: A
         userId: user.id
       });
 
+      // Notify parent component about the new analysis
+      if (runId && onAnalysisStarted) {
+        onAnalysisStarted(runId);
+      }
+
       toast({
         title: "Analysis Started",
-        description: `Analysis ${runId} is running. Results will be ready in a few minutes.`,
+        description: "Your visibility analysis is running. We'll refresh automatically when complete.",
       });
 
     } catch (error: any) {
