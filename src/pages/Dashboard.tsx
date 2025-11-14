@@ -78,12 +78,13 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [topicParam, brandParam]);
 
-  // Real-time subscription for analysis status updates
+  // Real-time subscription AND polling for analysis status updates
   useEffect(() => {
     if (!runningAnalysisId || !user?.id) return;
     
     console.log('Subscribing to analysis status for runId:', runningAnalysisId);
     
+    // Real-time subscription
     const subscription = supabase
       .channel(`analysis_run_${runningAnalysisId}`)
       .on('postgres_changes', {
@@ -93,24 +94,53 @@ const Dashboard = () => {
         filter: `run_id=eq.${runningAnalysisId}`
       }, (payload) => {
         const status = payload.new.status;
-        console.log('Analysis status updated:', status);
-        
-        if (status === 'completed') {
-          toast.success('Analysis completed! Refreshing dashboard...');
-          loadDashboardData(user.id);
-          setRunningAnalysisId(null);
-        } else if (status === 'failed') {
-          toast.error('Analysis failed. Please try again.');
-          setRunningAnalysisId(null);
-        } else if (status === 'processing') {
-          toast.info('Analysis in progress...');
-        }
+        console.log('Analysis status updated via realtime:', status);
+        handleAnalysisStatusChange(status);
       })
       .subscribe();
+
+    // Polling as backup (check every 5 seconds)
+    const pollInterval = setInterval(async () => {
+      console.log('Polling analysis status for runId:', runningAnalysisId);
+      const { data: run } = await supabase
+        .from('analysis_runs')
+        .select('status, visibility_score, total_mentions, created_at')
+        .eq('run_id', runningAnalysisId)
+        .single();
+      
+      if (run) {
+        console.log('Polled status:', run.status);
+        handleAnalysisStatusChange(run.status, run);
+      }
+    }, 5000);
+
+    // Handle status changes
+    const handleAnalysisStatusChange = (status: string, runData?: any) => {
+      if (status === 'completed') {
+        toast.success('Analysis completed! Refreshing dashboard...');
+        loadDashboardData(user.id);
+        setRunningAnalysisId(null);
+        
+        // Update last analysis run immediately if we have the data
+        if (runData) {
+          setLastAnalysisRun({
+            date: runData.created_at,
+            score: runData.visibility_score || 0,
+            mentions: runData.total_mentions || 0,
+          });
+        }
+      } else if (status === 'failed') {
+        toast.error('Analysis failed. Please try again.');
+        setRunningAnalysisId(null);
+      } else if (status === 'processing') {
+        toast.info('Analysis in progress...', { id: 'processing' });
+      }
+    };
       
     return () => {
-      console.log('Unsubscribing from analysis status');
+      console.log('Unsubscribing from analysis status and stopping polling');
       subscription.unsubscribe();
+      clearInterval(pollInterval);
     };
   }, [runningAnalysisId, user?.id]);
 
