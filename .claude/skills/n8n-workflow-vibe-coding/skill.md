@@ -492,9 +492,13 @@ For Supabase via PostgreSQL node:
 }
 ```
 
-### Execute Workflow Trigger
+### Execute Workflow Trigger (Modern Pattern)
 
-**In the called workflow, use Execute Workflow Trigger:**
+**CRITICAL: Define Parameters in the Sub-Workflow Trigger**
+
+The Execute Workflow Trigger should **define its expected parameters** using "Input Data Mode: Define using fields below". This creates a contract that auto-populates in the calling workflow's Execute Workflow node.
+
+**In the called workflow:**
 
 ```json
 {
@@ -502,27 +506,113 @@ For Supabase via PostgreSQL node:
   "type": "n8n-nodes-base.executeWorkflowTrigger",
   "typeVersion": 1,
   "position": [250, 300],
-  "parameters": {}
+  "parameters": {
+    "triggerMode": "manual",
+    "inputDataMode": "define",
+    "inputDataFields": {
+      "values": [
+        {
+          "fieldName": "run_id",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "brand_id",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "brand_name",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "topic",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "ai_engine",
+          "fieldType": "string",
+          "required": false
+        }
+      ]
+    }
+  }
 }
 ```
 
+**Benefits of defining parameters:**
+- Auto-populates fields in the calling workflow's Execute Workflow node
+- Clear documentation of what the sub-workflow expects
+- Type validation at design time
+- Better error messages when parameters are missing
+
 ### Data Flow Between Workflows
 
-Data passed from Execute Workflow node is available in the triggered workflow:
+**In the calling workflow (Execute Workflow node):**
 
-```javascript
-// In parent workflow
+After selecting the sub-workflow, n8n automatically shows the defined input fields. Fill them in:
+
+```json
 {
   "type": "n8n-nodes-base.executeWorkflow",
   "parameters": {
-    // Data from previous nodes automatically passes through
+    "source": "database",
+    "workflowId": {
+      "__rl": true,
+      "mode": "list",
+      "value": "workflow-id",
+      "cachedResultName": "Processor Workflow"
+    },
+    "inputData": {
+      "run_id": "={{ $json.run_id }}",
+      "brand_id": "={{ $json.brand_id }}",
+      "brand_name": "={{ $json.brand_name }}",
+      "topic": "={{ $json.topic }}",
+      "ai_engine": "perplexity"
+    }
   }
 }
+```
 
-// In child workflow - access via trigger
+**In the sub-workflow - access via trigger:**
+
+```javascript
+// Access the parameters passed from parent workflow
 const data = $('When Called By Another Workflow').item.json;
-const brandId = data.brandId;
-const brandName = data.brandName;
+const runId = data.run_id;
+const brandId = data.brand_id;
+const brandName = data.brand_name;
+const topic = data.topic;
+const aiEngine = data.ai_engine;
+```
+
+**Best Practice - Use Config Node Pattern:**
+
+```json
+{
+  "name": "Config",
+  "type": "n8n-nodes-base.set",
+  "parameters": {
+    "assignments": {
+      "assignments": [
+        {
+          "name": "runId",
+          "value": "={{ $('When Called By Another Workflow').item.json.run_id || 'test_run' }}"
+        },
+        {
+          "name": "brandId",
+          "value": "={{ $('When Called By Another Workflow').item.json.brand_id || 'test-brand' }}"
+        },
+        {
+          "name": "aiEngine",
+          "value": "={{ $('When Called By Another Workflow').item.json.ai_engine || 'perplexity' }}"
+        }
+      ]
+    }
+  }
+}
 ```
 
 ## Data Referencing Best Practices
@@ -662,6 +752,40 @@ Standard workflow pattern:
   }
 }
 ```
+
+**IMPORTANT: Avoid Unnecessary Merge Nodes**
+
+When you have multiple error paths (validation errors, database errors, etc.) that return different error responses, **don't use a Merge node**. Only ONE path will execute, so merging is unnecessary.
+
+**BAD Pattern - Unnecessary Merge:**
+```
+Set Success Response ──┐
+Set Database Error ────┤──> Merge All Paths ──> Return Response
+Set Validation Error ──┘
+```
+
+**GOOD Pattern - Direct Connections:**
+```
+Set Success Response ──┐
+Set Database Error ────┤──> Return Response
+Set Validation Error ──┘
+```
+
+**Why this matters:**
+- Only one path executes in error handling scenarios
+- Merge nodes can cause unexpected behavior or force execution of nodes that shouldn't run
+- Simpler workflow is easier to debug
+- Multiple nodes can connect to the same target without a merge
+
+**When DO you need Merge nodes:**
+- Parallel branches that ALL execute and need to be combined
+- Collecting results from multiple simultaneous API calls
+- Aggregating data from different sources that execute in parallel
+
+**When DON'T you need Merge nodes:**
+- Multiple conditional paths where only ONE executes (if/else, switch cases)
+- Error handling paths (success vs error paths)
+- Different response formats based on validation results
 
 ### 4. Retry Configuration
 
