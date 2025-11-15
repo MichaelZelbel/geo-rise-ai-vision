@@ -183,19 +183,19 @@ HTTP Request nodes:
           "id": "uuid-3",
           "name": "brandId",
           "type": "string",
-          "value": "={{ $('Webhook Trigger').item.json.body.brandId }}"
+          "value": "={{ $('Webhook Trigger').first().json.body.brandId }}"
         },
         {
           "id": "uuid-4",
           "name": "brandName",
           "type": "string",
-          "value": "={{ $('Webhook Trigger').item.json.body.brandName }}"
+          "value": "={{ $('Webhook Trigger').first().json.body.brandName }}"
         },
         {
           "id": "uuid-5",
           "name": "topic",
           "type": "string",
-          "value": "={{ $('Webhook Trigger').item.json.body.topic }}"
+          "value": "={{ $('Webhook Trigger').first().json.body.topic }}"
         }
       ]
     }
@@ -208,16 +208,21 @@ HTTP Request nodes:
 **BAD - Direct trigger reference:**
 ```json
 {
-  "jsCode": "const brandId = $('Webhook Trigger').item.json.body.brandId;"
+  "jsCode": "const brandId = $('Webhook Trigger').first().json.body.brandId;"
 }
 ```
 
-**GOOD - Config node reference:**
+**GOOD - Config node reference with .first():**
 ```json
 {
-  "jsCode": "const brandId = $('Config').item.json.brandId;"
+  "jsCode": "const brandId = $('Config').first().json.brandId;"
 }
 ```
+
+**Why .first() for Config:**
+- Config nodes always produce exactly one item
+- `.first()` works reliably inside loops and any execution context
+- `.item` can break when used inside Split in Batches or other loops
 
 ### Config Node for Different Trigger Types
 
@@ -230,11 +235,11 @@ HTTP Request nodes:
       "assignments": [
         {
           "name": "runId",
-          "value": "={{ $('Webhook Trigger').item.json.body.runId }}"
+          "value": "={{ $('Webhook Trigger').first().json.body.runId }}"
         },
         {
           "name": "userId",
-          "value": "={{ $('Webhook Trigger').item.json.body.userId }}"
+          "value": "={{ $('Webhook Trigger').first().json.body.userId }}"
         }
       ]
     }
@@ -251,17 +256,19 @@ HTTP Request nodes:
       "assignments": [
         {
           "name": "runId",
-          "value": "={{ $('When Called By Another Workflow').item.json.runId }}"
+          "value": "={{ $('When Called By Another Workflow').first().json.runId }}"
         },
         {
           "name": "brandName",
-          "value": "={{ $('When Called By Another Workflow').item.json.brandName }}"
+          "value": "={{ $('When Called By Another Workflow').first().json.brandName }}"
         }
       ]
     }
   }
 }
 ```
+
+**Note:** While `.item` works in Config node value extraction (since it's the immediate next node), using `.first()` consistently throughout your workflow improves readability and prevents confusion.
 
 ### Debug Pattern with Manual Trigger
 
@@ -440,8 +447,8 @@ N8N expects data in this format:
     "columns": {
       "mappingMode": "defineBelow",
       "value": {
-        "run_id": "={{ $('Config').item.json.runId }}",
-        "brand_name": "={{ $('Config').item.json.brandName }}",
+        "run_id": "={{ $('Config').first().json.runId }}",
+        "brand_name": "={{ $('Config').first().json.brandName }}",
         "status": "pending"
       }
     }
@@ -519,8 +526,8 @@ Data passed from Execute Workflow node is available in the triggered workflow:
   }
 }
 
-// In child workflow - access via trigger
-const data = $('When Called By Another Workflow').item.json;
+// In child workflow - access via trigger using .first()
+const data = $('When Called By Another Workflow').first().json;
 const brandId = data.brandId;
 const brandName = data.brandName;
 ```
@@ -532,34 +539,76 @@ const brandName = data.brandName;
 **ALWAYS use explicit node references:**
 
 ```javascript
-// GOOD - Explicit reference
-const brandName = $('Config').item.json.brandName;
-const runId = $('Config').item.json.runId;
+// GOOD - Explicit reference with .first()
+const brandName = $('Config').first().json.brandName;
+const runId = $('Config').first().json.runId;
 
 // BAD - Implicit reference (fragile)
 const brandName = $json.brandName;
 ```
 
+### .first() vs .item - CRITICAL DISTINCTION
+
+**The Golden Rule: Use `.first()` for Config nodes and single-item nodes. Use `.item` only for current loop context.**
+
+#### Why .first() is Better for Config Nodes:
+
+1. **Explicit and unambiguous** - Always gets the first item, regardless of execution context
+2. **Works inside loops** - When you're in a Split in Batches loop and reference Config, `.first()` correctly gets the single Config item
+3. **Safer for single-item nodes** - Config nodes produce exactly one item, so `.first()` makes that explicit
+4. **Less context-dependent** - `.item` depends on where you are in the execution flow
+
+#### The Problem with .item:
+
+```javascript
+// Inside a Split in Batches loop
+const batchItem = $('Split Batches').item.json;     // ✅ Current loop item
+const brandId = $('Config').item.json.brandId;       // ❌ Wrong! Tries to match batch context
+```
+
+When you use `.item` on the Config node while inside a loop, n8n tries to get the Config item at the same index as the current loop iteration. Since Config only has one item (index 0), this breaks on iteration 2+.
+
+#### Using .first() Correctly:
+
+```javascript
+// Inside a Split in Batches loop
+const batchItem = $('Split Batches').item.json;          // ✅ Current loop item
+const brandId = $('Config').first().json.brandId;        // ✅ Always gets Config's single item
+const timeout = $('Config').first().json.API_TIMEOUT;    // ✅ Works in any context
+```
+
+#### When to Use Each:
+
+| Scenario | Use | Example |
+|----------|-----|---------|
+| Config node (single item) | `.first()` | `$('Config').first().json.brandId` |
+| Any single-item node | `.first()` | `$('Database Query').first().json.result` |
+| Current loop item | `.item` | `$('Split Batches').item.json` |
+| Current webhook in webhook node | `.item` | `$('Webhook Trigger').item.json.body` |
+| Inside loop, referencing loop node | `.item` | `$('Process Item').item.json.status` |
+
 ### Common Data Access Patterns
 
-**Access single item from node:**
+**Access single item from Config or similar nodes (PREFERRED):**
 ```javascript
-$('Node Name').item.json.fieldName
+$('Config').first().json.fieldName
+$('Database Query').first().json.result
+$('API Call').first().json.response
+```
+
+**Access current item in loop context:**
+```javascript
+$('Split Batches').item.json.fieldName  // Current iteration item
 ```
 
 **Access all items from node:**
 ```javascript
-$('Node Name').all()
-```
-
-**Access first item:**
-```javascript
-$('Node Name').first().json.fieldName
+$('Node Name').all()  // Returns array of all items
 ```
 
 **Check if node has data:**
 ```javascript
-if ($('Node Name').item !== undefined) {
+if ($('Node Name').first() !== undefined) {
   // Node has data
 }
 ```
@@ -568,23 +617,40 @@ if ($('Node Name').item !== undefined) {
 
 **Webhook body data:**
 ```javascript
-// Immediate next node
+// Immediate next node after webhook
 $json.body.fieldName
 
-// Later nodes - reference webhook
-$('Webhook Trigger').item.json.body.fieldName
+// Later nodes - use .first() for webhook trigger
+$('Webhook Trigger').first().json.body.fieldName
 ```
 
-**Better - Use Config node:**
+**Better - Use Config node with .first():**
 ```javascript
-// In Config node
+// In Config node (extracting from webhook)
 {
   "name": "userId",
-  "value": "={{ $('Webhook Trigger').item.json.body.userId }}"
+  "value": "={{ $('Webhook Trigger').first().json.body.userId }}"
 }
 
-// Everywhere else
-$('Config').item.json.userId
+// Everywhere else - reference Config
+$('Config').first().json.userId
+```
+
+**Best Practice in Loops:**
+```javascript
+// Inside Split in Batches loop processing queries
+const currentQuery = $('Split Batches').item.json.query;     // Current loop item
+const brandId = $('Config').first().json.brandId;            // Config constant
+const timeout = $('Config').first().json.API_TIMEOUT;        // Config constant
+
+// Make API call with current query + config values
+return {
+  json: {
+    query: currentQuery,
+    brandId: brandId,
+    timeout: timeout
+  }
+};
 ```
 
 ## Configuration Management
@@ -873,7 +939,7 @@ Now all errors automatically route to your centralized handler!
   "name": "Retry Logic with Exponential Backoff",
   "type": "n8n-nodes-base.code",
   "parameters": {
-    "jsCode": "// Exponential backoff configuration\nconst MAX_RETRIES = 5;\nconst BASE_DELAY = 1000; // 1 second\nconst MAX_DELAY = 32000; // 32 seconds\nconst JITTER_PERCENT = 0.2; // ±20%\n\nconst retryCount = $('Config').item.json.retryCount || 0;\n\nif (retryCount >= MAX_RETRIES) {\n  throw new Error('Max retries exceeded');\n}\n\n// Calculate delay: min(BASE_DELAY * 2^retryCount, MAX_DELAY)\nlet delay = Math.min(\n  BASE_DELAY * Math.pow(2, retryCount),\n  MAX_DELAY\n);\n\n// Add jitter: delay * (1 ± JITTER_PERCENT)\nconst jitter = delay * JITTER_PERCENT * (Math.random() * 2 - 1);\ndelay = Math.round(delay + jitter);\n\nreturn {\n  json: {\n    retryCount: retryCount + 1,\n    delayMs: delay,\n    nextRetryAt: new Date(Date.now() + delay).toISOString()\n  }\n};"
+    "jsCode": "// Exponential backoff configuration\nconst MAX_RETRIES = 5;\nconst BASE_DELAY = 1000; // 1 second\nconst MAX_DELAY = 32000; // 32 seconds\nconst JITTER_PERCENT = 0.2; // ±20%\n\nconst retryCount = $('Config').first().json.retryCount || 0;\n\nif (retryCount >= MAX_RETRIES) {\n  throw new Error('Max retries exceeded');\n}\n\n// Calculate delay: min(BASE_DELAY * 2^retryCount, MAX_DELAY)\nlet delay = Math.min(\n  BASE_DELAY * Math.pow(2, retryCount),\n  MAX_DELAY\n);\n\n// Add jitter: delay * (1 ± JITTER_PERCENT)\nconst jitter = delay * JITTER_PERCENT * (Math.random() * 2 - 1);\ndelay = Math.round(delay + jitter);\n\nreturn {\n  json: {\n    retryCount: retryCount + 1,\n    delayMs: delay,\n    nextRetryAt: new Date(Date.now() + delay).toISOString()\n  }\n};"
   }
 }
 ```
@@ -1187,11 +1253,11 @@ Every subworkflow should return this structure:
         "conditions": {
           "string": [
             {
-              "value1": "={{ $('Config').item.json.brandId }}",
+              "value1": "={{ $('Config').first().json.brandId }}",
               "operation": "isNotEmpty"
             },
             {
-              "value1": "={{ $('Config').item.json.brandName }}",
+              "value1": "={{ $('Config').first().json.brandName }}",
               "operation": "isNotEmpty"
             }
           ],
@@ -1232,7 +1298,7 @@ Every subworkflow should return this structure:
       "type": "n8n-nodes-base.code",
       "position": [850, 300],
       "parameters": {
-        "jsCode": "// Business logic here\nconst brandName = $('Config').item.json.brandName;\n\nreturn {\n  json: {\n    processedData: `Processed ${brandName}`,\n    timestamp: new Date().toISOString()\n  }\n};"
+        "jsCode": "// Business logic here\nconst brandName = $('Config').first().json.brandName;\n\nreturn {\n  json: {\n    processedData: `Processed ${brandName}`,\n    timestamp: new Date().toISOString()\n  }\n};"
       },
       "continueOnFail": true,
       "onError": "continueErrorOutput"
@@ -1275,7 +1341,7 @@ Every subworkflow should return this structure:
               "type": "object",
               "value": {
                 "executionId": "={{ $execution.id }}",
-                "duration": "={{ $now.toMillis() - $('Config').item.json.executionStart.toMillis() }}",
+                "duration": "={{ $now.toMillis() - $('Config').first().json.executionStart.toMillis() }}",
                 "workflowName": "={{ $workflow.name }}"
               }
             }
@@ -1531,7 +1597,7 @@ Always validate inputs at the start and return structured errors:
     "conditions": {
       "string": [
         {
-          "value1": "={{ $('Config').item.json.requiredParam }}",
+          "value1": "={{ $('Config').first().json.requiredParam }}",
           "operation": "isNotEmpty"
         }
       ]
@@ -1590,8 +1656,8 @@ Include helpful debugging information in error responses:
             "message": "={{ $json.error?.message }}",
             "code": "API_CALL_FAILED",
             "originalError": "={{ $json.error }}",
-            "attemptedUrl": "={{ $('External API Call').item.json.url }}",
-            "inputData": "={{ $('Config').item.json }}",
+            "attemptedUrl": "={{ $('External API Call').first().json.url }}",
+            "inputData": "={{ $('Config').first().json }}",
             "timestamp": "={{ $now.toISO() }}",
             "executionId": "={{ $execution.id }}"
           }
@@ -1733,10 +1799,11 @@ These are battle-tested patterns discovered during production workflow developme
 // In "Respond to Webhook" node
 responseBody: {{ JSON.stringify({
   success: true,
-  runId: $('Config').item.json.runId,
+  runId: $('Config').first().json.runId,
   message: 'Analysis started'
 }) }}
 ```
+*Note: This example also uses `.first()` for Config - the problem here is hard-coding node references, not the accessor method.*
 
 This fails when:
 - Testing with Manual Trigger (Config node might not be in execution path)
@@ -1916,7 +1983,7 @@ This syntax causes: `'error' expects a object but we got '...'` error.
 // Object with nested data
 {{
   {
-    "runId": $('Config').item.json.runId,
+    "runId": $('Config').first().json.runId,
     "status": "completed",
     "results": $json.data,
     "completedAt": $now.toISO()
@@ -1926,7 +1993,7 @@ This syntax causes: `'error' expects a object but we got '...'` error.
 // Object with dynamic message using template literal
 {{
   {
-    "message": `Failed to process brand: ${$('Config').item.json.brandName}`,
+    "message": `Failed to process brand: ${$('Config').first().json.brandName}`,
     "code": "PROCESSING_ERROR",
     "timestamp": $now.toISO()
   }
@@ -1943,7 +2010,7 @@ This syntax causes: `'error' expects a object but we got '...'` error.
     },
     "metadata": {
       "executionId": $execution.id,
-      "duration": Math.round(($now.toMillis() - new Date($('Config').item.json.executionStart).getTime()) / 1000)
+      "duration": Math.round(($now.toMillis() - new Date($('Config').first().json.executionStart).getTime()) / 1000)
     }
   }
 }}
@@ -1982,10 +2049,11 @@ This syntax causes: `'error' expects a object but we got '...'` error.
 ```javascript
 // In final Respond to Webhook node
 {
-  "runId": $('Validate and Prepare').item.json.runId,
-  "status": $('Config').item.json.status
+  "runId": $('Validate and Prepare').first().json.runId,
+  "status": $('Config').first().json.status
 }
 ```
+*Note: Even with `.first()`, hard-coding node references is fragile - use merged data instead.*
 
 **GOOD - Reference merged data:**
 ```javascript
@@ -2242,8 +2310,8 @@ Before finalizing any n8n workflow JSON:
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "brand_id": "={{ $('Config').item.json.brandId }}",
-            "brand_name": "={{ $('Config').item.json.brandName }}",
+            "brand_id": "={{ $('Config').first().json.brandId }}",
+            "brand_name": "={{ $('Config').first().json.brandName }}",
             "status": "pending"
           }
         }
