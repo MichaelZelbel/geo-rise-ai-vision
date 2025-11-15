@@ -35,7 +35,7 @@
     },
     {
       "parameters": {
-        "url": "https://trends.google.com/trends/api/widgetdata/multiline?hl=en-US&q=ChatGPT,Claude,Gemini,Kimi,Perplexity&date=today 1-m&geo=US",
+        "url": "https://trends.google.com/trends/api/widgetdata/multiline?hl=en-US&q=ChatGPT,Claude,Gemini,Kimi,Perplexity&date=today%201-m&geo=US",
         "options": {
           "redirect": {
             "redirect": {
