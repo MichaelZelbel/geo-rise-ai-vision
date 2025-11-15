@@ -11,7 +11,7 @@ import { User, Settings, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
-import georiseLogo from "@/assets/georise-logo.png";
+import headerLogo from "@/assets/header-logo.png";
 
 interface DashboardHeaderProps {
   userEmail?: string;
@@ -36,11 +36,8 @@ const DashboardHeader = ({ userEmail, userPlan }: DashboardHeaderProps) => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <img src={georiseLogo} alt="GEORISE Logo" className="w-10 h-10" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                GEORISE
-              </span>
+            <Link to="/dashboard" className="flex items-center">
+              <img src={headerLogo} alt="GEORISE" className="h-10" />
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <NavLink
