@@ -143,7 +143,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `Have you ever heared about ${brandName} in relation to ${topic}?`\n];\n\nconst templates_all_20 = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\n// Define weighted question templates\nconst weightedQuestions = [\n  // Leader questions (10 points each)\n  {\n    template: `Who are the most influential people, brands, and companies in ${topic}?`,\n    type: 'leader',\n    weight: 10\n  },\n  {\n    template: `Which companies, brands, and people are considered leaders in ${topic}?`,\n    type: 'leader',\n    weight: 10\n  },\n  {\n    template: `Who should I follow to get the most valuable insights about ${topic}?`,\n    type: 'leader',\n    weight: 10\n  },\n  \n  // Newcomer question (5 points)\n  {\n    template: `Who are the emerging voices — people, brands, or companies — in ${topic}?`,\n    type: 'newcomer',\n    weight: 5\n  },\n  \n  // Wide-net question (2 points)\n  {\n    template: `Please give me a long, extensive list of people, brands, and companies that frequently appear in discussions or content related to ${topic}.`,\n    type: 'wide_net',\n    weight: 2\n  },\n  \n  // Direct awareness question (1 point)\n  {\n    template: `Does the name '${brandName}' appear anywhere in the broader context of ${topic}? If you cannot find any connection at all, reply only with 'no'. If you can see any relation, please explain it.`,\n    type: 'direct_awareness',\n    weight: 1\n  }\n];\n\n// Convert to output format with metadata\nconst output = weightedQuestions.map((q, index) => ({\n  json: {\n    query: q.template,\n    queryIndex: index + 1,\n    questionType: q.type,\n    questionWeight: q.weight,\n    totalQuestions: weightedQuestions.length,\n    maxPossibleScore: 38\n  }\n}));\n\nreturn output;"
       },
       "id": "dcdb6dc1-10af-4bca-876a-42213459e015",
       "name": "Generate Queries",
@@ -374,7 +374,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName.toLowerCase();\nconst normalizedData = $json;\nconst queryData = $('Split Batches').item.json;\n\nconst response = normalizedData.content;\nconst citations = normalizedData.citations || [];\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  // Position scoring based on location in response\n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  // Extract context around mention\n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: config.aiEngine,\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mention_type: mentionType,\n    sentiment: 'neutral',\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    full_response: response.substring(0, 1000),\n    occurred_at: new Date().toISOString()\n  }\n};"
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName.toLowerCase();\nconst normalizedData = $json;\nconst queryData = $('Split Batches').item.json;\n\nconst response = normalizedData.content;\nconst citations = normalizedData.citations || [];\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  // Position scoring based on location in response\n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  // Extract context around mention\n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\n// Calculate points earned based on weight\nconst questionWeight = queryData.questionWeight || 1;\nconst pointsEarned = mentioned ? questionWeight : 0;\n\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: config.aiEngine,\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    question_type: queryData.questionType || 'unknown',\n    question_weight: questionWeight,\n    points_earned: pointsEarned,\n    mentioned: mentioned,\n    position: position,\n    mention_type: mentionType,\n    sentiment: 'neutral',\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    full_response: response.substring(0, 1000),\n    occurred_at: new Date().toISOString()\n  }\n};"
       },
       "id": "056680f8-4eb2-40ff-8167-f8ec501aa162",
       "name": "Analyze Response",
@@ -405,6 +405,18 @@
             {
               "fieldId": "query",
               "fieldValue": "={{ $json.query }}"
+            },
+            {
+              "fieldId": "question_type",
+              "fieldValue": "={{ $json.question_type }}"
+            },
+            {
+              "fieldId": "question_weight",
+              "fieldValue": "={{ $json.question_weight }}"
+            },
+            {
+              "fieldId": "points_earned",
+              "fieldValue": "={{ $json.points_earned }}"
             },
             {
               "fieldId": "mentioned",
