@@ -215,9 +215,15 @@ HTTP Request nodes:
 **GOOD - Config node reference:**
 ```json
 {
-  "jsCode": "const brandId = $('Config').item.json.brandId;"
+  "jsCode": "const brandId = $('Config').first().json.brandId;"
 }
 ```
+
+**Why `.first()` instead of `.item`:**
+- Config nodes produce exactly one item
+- `.first()` is explicit and always gets that single item
+- `.first()` works correctly inside loops (Split in Batches)
+- `.item` is context-dependent and can fail in loop scenarios
 
 ### Config Node for Different Trigger Types
 
@@ -622,9 +628,9 @@ const aiEngine = data.ai_engine;
 **ALWAYS use explicit node references:**
 
 ```javascript
-// GOOD - Explicit reference
-const brandName = $('Config').item.json.brandName;
-const runId = $('Config').item.json.runId;
+// GOOD - Explicit reference with .first() for single-item nodes
+const brandName = $('Config').first().json.brandName;
+const runId = $('Config').first().json.runId;
 
 // BAD - Implicit reference (fragile)
 const brandName = $json.brandName;
@@ -632,9 +638,17 @@ const brandName = $json.brandName;
 
 ### Common Data Access Patterns
 
-**Access single item from node:**
+**Access single-item nodes (Config, Set, etc.):**
 ```javascript
-$('Node Name').item.json.fieldName
+// Use .first() for nodes that produce one item
+$('Config').first().json.fieldName
+$('Set Variables').first().json.fieldName
+```
+
+**Access current item in a loop:**
+```javascript
+// Use .item when processing the current loop item
+$('Split Batches').item.json.fieldName
 ```
 
 **Access all items from node:**
@@ -642,10 +656,10 @@ $('Node Name').item.json.fieldName
 $('Node Name').all()
 ```
 
-**Access first item:**
-```javascript
-$('Node Name').first().json.fieldName
-```
+**Best Practice - Use `.first()` by default:**
+- For Config nodes, Set nodes, and any node producing a single item
+- More explicit and works in all contexts (inside/outside loops)
+- Use `.item` only when you specifically need the current loop item
 
 **Check if node has data:**
 ```javascript
@@ -667,14 +681,14 @@ $('Webhook Trigger').item.json.body.fieldName
 
 **Better - Use Config node:**
 ```javascript
-// In Config node
+// In Config node (directly connected to webhook)
 {
   "name": "userId",
-  "value": "={{ $('Webhook Trigger').item.json.body.userId }}"
+  "value": "={{ $json.body.userId }}"
 }
 
-// Everywhere else
-$('Config').item.json.userId
+// Everywhere else (use .first() for stability)
+$('Config').first().json.userId
 ```
 
 ## Configuration Management
