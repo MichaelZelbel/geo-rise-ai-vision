@@ -24,9 +24,12 @@ export type Database = {
           mention_type: string | null
           mentioned: boolean | null
           occurred_at: string
+          points_earned: number | null
           position: number | null
           query: string
           query_index: number | null
+          question_type: string | null
+          question_weight: number | null
           run_id: string
           sentiment: string | null
           url: string | null
@@ -40,9 +43,12 @@ export type Database = {
           mention_type?: string | null
           mentioned?: boolean | null
           occurred_at?: string
+          points_earned?: number | null
           position?: number | null
           query: string
           query_index?: number | null
+          question_type?: string | null
+          question_weight?: number | null
           run_id?: string
           sentiment?: string | null
           url?: string | null
@@ -56,9 +62,12 @@ export type Database = {
           mention_type?: string | null
           mentioned?: boolean | null
           occurred_at?: string
+          points_earned?: number | null
           position?: number | null
           query?: string
           query_index?: number | null
+          question_type?: string | null
+          question_weight?: number | null
           run_id?: string
           sentiment?: string | null
           url?: string | null
