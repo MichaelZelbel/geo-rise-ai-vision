@@ -118,7 +118,7 @@ const Dashboard = () => {
     // Handle status changes
     const handleAnalysisStatusChange = (status: string, runData?: any) => {
       if (status === 'completed') {
-        toast.success('Analysis completed! Refreshing dashboard...');
+        // Toast removed per user request
         loadDashboardData(user.id);
         setRunningAnalysisId(null);
         
@@ -133,9 +133,8 @@ const Dashboard = () => {
       } else if (status === 'failed') {
         toast.error('Analysis failed. Please try again.');
         setRunningAnalysisId(null);
-      } else if (status === 'processing') {
-        toast.info('Analysis in progress...', { id: 'processing' });
       }
+      // 'processing' toast removed per user request
     };
       
     return () => {

@@ -62,9 +62,7 @@ export function RunAnalysisButton({
         userId,
       });
 
-      toast.success('Analysis started!', {
-        description: 'Your brand visibility analysis is now running. This may take a few minutes.',
-      });
+      // Toast removed per user request - message shown below button instead
 
       // Call success callback
       if (onAnalysisStarted) {
@@ -87,24 +85,32 @@ export function RunAnalysisButton({
   };
 
   return (
-    <Button
-      onClick={handleRunAnalysis}
-      disabled={disabled || isLoading}
-      variant={variant}
-      size={size}
-      className={className}
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Starting Analysis...
-        </>
-      ) : (
-        <>
-          <Play className="mr-2 h-4 w-4" />
-          Run Analysis
-        </>
+    <div className="flex flex-col gap-2">
+      <Button
+        onClick={handleRunAnalysis}
+        disabled={disabled || isLoading}
+        variant={variant}
+        size={size}
+        className={className}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Starting Analysis...
+          </>
+        ) : (
+          <>
+            <Play className="mr-2 h-4 w-4" />
+            Run Analysis
+          </>
+        )}
+      </Button>
+      {isLoading && (
+        <p className="text-sm text-muted-foreground text-center">
+          10-minute coffee break for you! ☕<br />
+          You can safely close this page – we've got this!
+        </p>
       )}
-    </Button>
+    </div>
   );
 }
