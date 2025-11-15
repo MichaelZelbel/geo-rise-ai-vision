@@ -13,6 +13,7 @@ import QuickWinsCard from "@/components/dashboard/QuickWinsCard";
 import TopMentionsCard from "@/components/dashboard/TopMentionsCard";
 import EmptyState from "@/components/dashboard/EmptyState";
 import ChatCoach from "@/components/dashboard/ChatCoach";
+import RecentActivity from "@/components/profile/RecentActivity";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WizardModal } from "@/components/wizard/WizardModal";
 
@@ -323,6 +324,9 @@ const Dashboard = () => {
 
             {/* Third Row - Top Mentions */}
             <TopMentionsCard isPro={isPro} />
+
+            {/* Fourth Row - Recent Activity */}
+            {user && <RecentActivity userId={user.id} />}
           </div>
         )}
         
