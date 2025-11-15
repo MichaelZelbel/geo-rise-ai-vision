@@ -1,27 +1,31 @@
 {
-  "name": "GEORISE Analysis Processor",
+  "name": "Analysis Processor Peplexity",
   "nodes": [
     {
       "parameters": {},
-      "id": "482ba03f-6191-4ae5-af44-e8e931857655",
+      "id": "29b19af5-42d0-4284-8946-98b477957be1",
       "name": "Manual Trigger for Testing",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -1424,
-        -64
-      ]
+        320,
+        160
+      ],
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {},
-      "id": "55da6266-ef75-4c1a-a520-276ab00109c5",
+      "id": "71a96b11-3e0a-4f18-a193-151246538984",
       "name": "When Called By Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
       "position": [
-        -1424,
-        128
-      ]
+        320,
+        416
+      ],
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -31,19 +35,19 @@
               "id": "config-run-id",
               "name": "runId",
               "type": "string",
-              "value": "={{ $json.runId || 'run_test_' + Date.now() }}"
+              "value": "={{ $json.run_id || 'run_test_' + Date.now() }}"
             },
             {
               "id": "config-brand-id",
               "name": "brandId",
               "type": "string",
-              "value": "={{ $json.brandId || '00000000-0000-4000-8000-000000000001' }}"
+              "value": "={{ $json.brand_id || 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
             },
             {
               "id": "config-brand-name",
               "name": "brandName",
               "type": "string",
-              "value": "={{ $json.brandName || 'Test Brand' }}"
+              "value": "={{ $json.brand_name || 'Test Brand' }}"
             },
             {
               "id": "config-topic",
@@ -55,7 +59,7 @@
               "id": "config-user-id",
               "name": "userId",
               "type": "string",
-              "value": "={{ $json.userId || '00000000-0000-4000-8000-000000000002' }}"
+              "value": "={{ $json.user_id || '7f078493-f4de-491b-8156-6f7f8f425936' }}"
             },
             {
               "id": "config-batch-size",
@@ -74,18 +78,36 @@
               "name": "TOTAL_QUERIES",
               "type": "number",
               "value": 20
+            },
+            {
+              "id": "055a42c4-2f3a-48c9-9641-8d3f3ba6e8da",
+              "name": "executionStart",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "4bad60bb-ec77-408a-92cd-2acbe463fe6f",
+              "name": "workflowName",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            },
+            {
+              "id": "87320d6b-07a0-4a4a-9210-d29fe90b32fe",
+              "name": "executionId",
+              "value": "={{ $execution.id }}",
+              "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "2a380b04-fd25-404c-8dd8-3b2762f11a65",
+      "id": "67121338-31b5-45a3-9f9c-3604345b2383",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1216,
-        32
+        544,
+        160
       ]
     },
     {
@@ -107,33 +129,36 @@
           ]
         }
       },
-      "id": "c3ac26f1-57bd-4441-859a-ab217fe115a3",
+      "id": "a513141d-c3c6-413f-8cd3-17b29fd9c20b",
       "name": "Update Status Processing",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1024,
-        32
+        976,
+        160
       ],
       "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
       "credentials": {
         "supabaseApi": {
           "id": "xSCCE5dL9poY7JFF",
           "name": "Supabase Lovable Georise"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`\n];\n\nconst templates_all_20 = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
       },
-      "id": "edb4d665-5a61-4d67-985c-950932e4d675",
+      "id": "ba20fb60-feb6-414b-9f40-9c3666f10677",
       "name": "Generate Queries",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -816,
-        32
+        1200,
+        160
       ]
     },
     {
@@ -141,13 +166,13 @@
         "batchSize": "={{ $('Config').item.json.BATCH_SIZE }}",
         "options": {}
       },
-      "id": "6e24fd15-f859-4570-a1fb-f5952dc1b111",
+      "id": "eeaad94c-d87c-4f5c-8185-43a72c2ef0f8",
       "name": "Split Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -576,
-        240
+        1424,
+        160
       ]
     },
     {
@@ -165,13 +190,13 @@
         },
         "requestOptions": {}
       },
-      "id": "7ff9b5e8-6063-4c84-ba6f-9098a05a55fe",
+      "id": "0caf3381-f424-4ce1-a81f-e3bfa2316534",
       "name": "Call Perplexity",
       "type": "n8n-nodes-base.perplexity",
       "typeVersion": 1,
       "position": [
-        -368,
-        112
+        1632,
+        432
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -181,53 +206,20 @@
           "name": "Perplexity account"
         }
       },
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "da9aa696-9e82-4ecf-a020-04f85731958e",
-              "leftValue": "={{ $json.choices.length }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "looseTypeValidation": true,
-        "options": {}
-      },
-      "id": "8c3bc981-8f5a-4d65-8e17-46c95404e749",
-      "name": "Check Perplexity Success",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -208,
-        -112
-      ]
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "amount": "={{ $('Config').item.json.RATE_LIMIT_S }}"
       },
-      "id": "628dc654-3c3b-4228-93ec-95acd9229dbb",
+      "id": "0b6c367d-c0cc-4780-a0dd-0c96f0ba7ddf",
       "name": "Rate Limit Delay",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        -16,
-        -96
+        1856,
+        432
       ],
       "webhookId": "rate-limit-delay"
     },
@@ -235,13 +227,13 @@
       "parameters": {
         "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName.toLowerCase();\nconst perplexityData = $json;\nconst queryData = $('Split Batches').item.json;\n\nconst response = perplexityData.choices[0].message.content;\nconst citations = perplexityData.citations || [];\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  // Position scoring based on location in response\n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  // Extract context around mention\n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: 'perplexity',\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mention_type: mentionType,\n    sentiment: 'neutral',\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    full_response: response.substring(0, 1000),\n    occurred_at: new Date().toISOString()\n  }\n};"
       },
-      "id": "de6da68e-c7bd-4812-aa50-c69481d4b6f2",
+      "id": "aca616ef-5902-4161-af9a-52d074fe4ea5",
       "name": "Analyze Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        192,
-        -96
+        2080,
+        432
       ]
     },
     {
@@ -300,56 +292,57 @@
           ]
         }
       },
-      "id": "d5c6ad2c-f990-43db-a840-33baa3c595d1",
+      "id": "95dd194a-cb17-4da3-b1b4-750225a5f1e7",
       "name": "Save Query Result",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        384,
-        -96
+        2304,
+        656
       ],
-      "alwaysOutputData": true,
+      "alwaysOutputData": false,
+      "retryOnFail": true,
       "credentials": {
         "supabaseApi": {
           "id": "xSCCE5dL9poY7JFF",
           "name": "Supabase Lovable Georise"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "jsCode": "// Log failed query\nconst config = $('Config').item.json;\nconst queryData = $('Split Batches').item.json;\nconst error = $json.error || { message: 'API call failed' };\n\nconsole.error(`Query ${queryData.queryIndex} failed:`, error.message);\n\n// Return minimal result for failed query\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: 'perplexity',\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: false,\n    position: null,\n    mention_type: null,\n    sentiment: null,\n    url: null,\n    context: null,\n    full_response: `ERROR: ${error.message}`,\n    occurred_at: new Date().toISOString()\n  }\n};"
       },
-      "id": "269335bb-4a87-48a6-96a2-10d77462223d",
+      "id": "acba2894-f83d-4c5c-99b0-e3d4298616bf",
       "name": "Handle API Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -64,
-        256
+        1856,
+        656
       ]
     },
     {
       "parameters": {},
-      "id": "3e229237-e874-42cb-ae7a-29971b07d2d8",
+      "id": "1b57228a-88c9-4969-b1c1-c0acdf769de6",
       "name": "Merge Results",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        192,
-        240
+        2080,
+        656
       ]
     },
     {
       "parameters": {},
-      "id": "cea6ef72-d883-4ccd-8968-0aa9e4a61fd1",
+      "id": "9914fe5d-d674-4cd8-a0d6-f14bb04daae4",
       "name": "Loop Back",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        592,
-        -96
+        2512,
+        656
       ]
     },
     {
@@ -360,33 +353,36 @@
         "filterType": "string",
         "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}"
       },
-      "id": "d72a7542-ee43-41d8-8da9-3146c5471676",
+      "id": "2c0c05d3-fd33-4b30-ae6d-2605bf6a4ce5",
       "name": "Get Analyses",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        784,
-        32
+        1632,
+        160
       ],
-      "alwaysOutputData": true,
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
       "credentials": {
         "supabaseApi": {
           "id": "xSCCE5dL9poY7JFF",
           "name": "Supabase Lovable Georise"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "jsCode": "const analyses = $input.all().map(item => item.json);\nconst totalQueries = analyses.length;\nconst totalMentions = analyses.filter(a => a.mentioned === true).length;\nconst mentionRate = totalQueries > 0 ? Math.round((totalMentions / totalQueries) * 100 * 100) / 100 : 0;\nconst topPositionCount = analyses.filter(a => a.position === 1).length;\nconst citationCount = analyses.filter(a => a.mention_type === 'citation').length;\nconst positionsArray = analyses.filter(a => a.position !== null).map(a => a.position);\nconst avgPosition = positionsArray.length > 0 ? Math.round((positionsArray.reduce((sum, p) => sum + p, 0) / positionsArray.length) * 10) / 10 : null;\n\nreturn {\n  json: {\n    total_queries: totalQueries,\n    total_mentions: totalMentions,\n    mention_rate: mentionRate,\n    visibility_score: mentionRate,\n    top_position_count: topPositionCount,\n    citation_count: citationCount,\n    avg_position: avgPosition\n  }\n};"
       },
-      "id": "014bfcb5-802e-40de-ac70-778eaf0b435e",
+      "id": "69acd0b1-928e-4324-8d9f-b973efd48737",
       "name": "Calculate Scores",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        992,
-        32
+        1856,
+        160
       ]
     },
     {
@@ -394,7 +390,7 @@
         "operation": "update",
         "tableId": "analysis_runs",
         "filterType": "string",
-        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}",
+        "filterString": "=run_id=eq.{{ $('Config').first().json.runId }}",
         "fieldsUi": {
           "fieldValues": [
             {
@@ -439,7 +435,7 @@
             },
             {
               "fieldId": "avg_position",
-              "fieldValue": "= {{ $json.avg_position }}"
+              "fieldValue": "={{ $json.avg_position }}"
             },
             {
               "fieldId": "updated_at",
@@ -448,34 +444,232 @@
           ]
         }
       },
-      "id": "032ac0bf-2b2b-4bb2-b978-ad90d094a2bf",
+      "id": "3a8518ec-4fae-4bbe-9a44-cf1f2a6664d8",
       "name": "Update Status Completed",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1184,
-        32
+        2080,
+        160
       ],
-      "alwaysOutputData": true,
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 3,
       "credentials": {
         "supabaseApi": {
           "id": "xSCCE5dL9poY7JFF",
           "name": "Supabase Lovable Georise"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+        "content": "## Always Return, Never Throw\n**because it is a subworkflow",
+        "height": 220,
+        "width": 740
       },
-      "id": "991c1547-5bcc-478c-8787-eb50cd96a11e",
-      "name": "Generate all 20 Queries",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -816,
-        -192
-      ]
+        272,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "bdc0825c-0c3c-43f4-94c1-e8f3292e38d3",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d3c26de2-ae2b-423d-a5e6-b731243b0878",
+              "leftValue": "={{ $('Config').item.json.runId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "8f1b43cc-785e-460a-8f15-df71bfef5e21",
+              "leftValue": "={{ $('Config').item.json.brandId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "99b5fb2c-0c89-42b9-89c3-7c9ce437beaf",
+              "leftValue": "={{ $('Config').item.json.brandName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "55b30658-d844-4748-82a7-e9d98b258bf0",
+              "leftValue": "={{ $('Config').item.json.topic }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        160
+      ],
+      "id": "1850b6f4-67d6-4274-a029-6d5684b7f4a2",
+      "name": "Validate Inputs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Missing required parameters. Please provide: runId, brandId, brandName, and topic\",\n    \"code\": \"VALIDATION_ERROR\",\n    \"node\": \"Validate Inputs\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": false\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $('Config').item.json.executionId,\n    \"workflowName\": $('Config').item.json.workflowName\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        608
+      ],
+      "id": "2edb055c-e829-45ee-afd5-b38e36158a07",
+      "name": "Set Input Validation Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": `Database operation failed: ${$json.error?.message || 'Unknown database error'}`,\n    \"code\": \"DATABASE_ERROR\",\n    \"node\": \"Database Operation\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": true,\n    \"details\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"runId\": $('Config').first().json.runId\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2512,
+        432
+      ],
+      "id": "7240d5f1-35fd-4619-9b45-fc0ad906aa7c",
+      "name": "Set Database Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "data",
+              "value": "={{\n  {\n    \"runId\": $('Config').first().json.runId,\n    \"brandId\": $('Config').first().json.brandId,\n    \"brandName\": $('Config').first().json.brandName,\n    \"totalQueries\": $('Calculate Scores').first().json.total_queries,\n    \"totalMentions\": $('Calculate Scores').first().json.total_mentions,\n    \"mentionRate\": $('Calculate Scores').first().json.mention_rate,\n    \"visibilityScore\": $('Calculate Scores').first().json.visibility_score,\n    \"topPositionCount\": $('Calculate Scores').first().json.top_position_count,\n    \"citationCount\": $('Calculate Scores').first().json.citation_count,\n    \"avgPosition\": $('Calculate Scores').first().json.avg_position,\n    \"status\": \"completed\",\n    \"completedAt\": $now.toISO()\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $('Config').first().json.executionId,\n    \"workflowName\": $('Config').first().json.workflowName,\n    \"duration\": Math.round(($now.toMillis() - new Date($('Config').first().json.executionStart).getTime()) / 1000)\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2304,
+        160
+      ],
+      "id": "523c0cd1-2980-4b4b-990f-64684bddd121",
+      "name": "Set Success Response"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2896,
+        448
+      ],
+      "id": "47ee5661-9d6f-44db-b9b5-efda98213352",
+      "name": "Merge All Paths"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        448
+      ],
+      "id": "6ab2f3d1-ef0d-46a4-8634-82c9b17438e8",
+      "name": "Return Response"
     }
   ],
   "pinData": {},
@@ -506,7 +700,7 @@
       "main": [
         [
           {
-            "node": "Update Status Processing",
+            "node": "Validate Inputs",
             "type": "main",
             "index": 0
           }
@@ -518,6 +712,13 @@
         [
           {
             "node": "Generate Queries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
             "type": "main",
             "index": 0
           }
@@ -554,17 +755,6 @@
       ]
     },
     "Call Perplexity": {
-      "main": [
-        [
-          {
-            "node": "Check Perplexity Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Perplexity Success": {
       "main": [
         [
           {
@@ -612,6 +802,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -656,6 +853,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -669,13 +873,93 @@
           }
         ]
       ]
+    },
+    "Update Status Completed": {
+      "main": [
+        [
+          {
+            "node": "Set Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inputs": {
+      "main": [
+        [
+          {
+            "node": "Update Status Processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Input Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input Validation Error": {
+      "main": [
+        [
+          {
+            "node": "Merge All Paths",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Set Database Error": {
+      "main": [
+        [
+          {
+            "node": "Merge All Paths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Success Response": {
+      "main": [
+        [
+          {
+            "node": "Merge All Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Paths": {
+      "main": [
+        [
+          {
+            "node": "Return Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "584e6968-8043-48cb-8f33-cc36d25bfa41",
+  "versionId": "0dc29921-7675-4604-8c2a-e73e28527ba4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"

@@ -178,39 +178,6 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "check-create-success",
-              "leftValue": "={{ $json.error }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isEmpty"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "457171c7-a4ac-4ed7-84d7-81ea42aab98d",
-      "name": "Run Created?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -640,
-        -48
-      ]
-    },
-    {
-      "parameters": {
         "assignments": {
           "assignments": [
             {
@@ -263,36 +230,6 @@
       "maxTries": 3,
       "waitBetweenTries": 5000,
       "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "check-processor-success",
-              "leftValue": "={{ $json.error }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isEmpty"
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "eb741a57-25c1-4415-8a78-067cc759a21d",
-      "name": "Processor Success?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        0,
-        80
-      ]
     },
     {
       "parameters": {
@@ -515,6 +452,74 @@
         }
       },
       "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c30e9f91-ba14-45f7-8dcf-d20ced89e30c",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -688,
+        -240
+      ],
+      "id": "d611294e-09dd-4ad1-a361-1c48217926e2",
+      "name": "Run Created?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c30e9f91-ba14-45f7-8dcf-d20ced89e30c",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        -448
+      ],
+      "id": "1c1b725a-0f15-4701-8ea1-da660e1d1c27",
+      "name": "Processor Success Check"
     }
   ],
   "pinData": {},
@@ -621,24 +626,6 @@
         ]
       ]
     },
-    "Run Created?": {
-      "main": [
-        [
-          {
-            "node": "Select Processor",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Log Create Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Select Processor": {
       "main": [
         [
@@ -654,25 +641,7 @@
       "main": [
         [
           {
-            "node": "Processor Success?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Processor Success?": {
-      "main": [
-        [
-          {
-            "node": "Increment Success",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Log Processor Error",
+            "node": "Processor Success Check",
             "type": "main",
             "index": 0
           }
@@ -806,13 +775,49 @@
           }
         ]
       ]
+    },
+    "Run Created?": {
+      "main": [
+        [
+          {
+            "node": "Select Processor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Create Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processor Success Check": {
+      "main": [
+        [
+          {
+            "node": "Increment Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Processor Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "470b2f16-b53b-49b1-b853-100a66c8dfc0",
+  "versionId": "e004d5df-cb69-48cf-ac57-5c8b4cfd6f99",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"

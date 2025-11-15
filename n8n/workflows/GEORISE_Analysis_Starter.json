@@ -10,7 +10,10 @@
       "position": [
         -592,
         -96
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -24,9 +27,12 @@
       "typeVersion": 2,
       "position": [
         -592,
-        112
+        160
       ],
-      "webhookId": "georise-analysis-start"
+      "webhookId": "georise-analysis-start",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -36,7 +42,7 @@
               "id": "config-brand-id",
               "name": "brandId",
               "type": "string",
-              "value": "={{ $json.body ? $json.body.brandId : '00000000-0000-4000-8000-000000000001' }}"
+              "value": "={{ $json.body ? $json.body.brandId : 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
             },
             {
               "id": "config-brand-name",
@@ -54,7 +60,7 @@
               "id": "config-user-id",
               "name": "userId",
               "type": "string",
-              "value": "={{ $json.body ? $json.body.userId : '00000000-0000-4000-8000-000000000002' }}"
+              "value": "={{ $json.body ? $json.body.userId : '7f078493-f4de-491b-8156-6f7f8f425936' }}"
             },
             {
               "id": "config-run-id",
@@ -90,8 +96,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -192,
-        16
+        -224,
+        -240
       ]
     },
     {
@@ -101,19 +107,19 @@
           "fieldValues": [
             {
               "fieldId": "run_id",
-              "fieldValue": "={{ $json.runId }}"
+              "fieldValue": "={{ $('Config').item.json.runId }}"
             },
             {
               "fieldId": "brand_id",
-              "fieldValue": "={{ $json.brandId }}"
+              "fieldValue": "={{ $('Config').item.json.brandId }}"
             },
             {
               "fieldId": "brand_name",
-              "fieldValue": "={{ $json.brandName }}"
+              "fieldValue": "={{ $('Config').item.json.brandName }}"
             },
             {
               "fieldId": "topic",
-              "fieldValue": "={{ $json.topic }}"
+              "fieldValue": "={{ $('Config').item.json.topic }}"
             },
             {
               "fieldId": "status",
@@ -135,15 +141,19 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        16,
-        16
+        32,
+        0
       ],
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
       "credentials": {
         "supabaseApi": {
           "id": "xSCCE5dL9poY7JFF",
           "name": "Supabase Lovable Georise"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -169,14 +179,14 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        208,
-        16
+        512,
+        -16
       ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, runId: $('Validate and Prepare').item.json.runId, message: 'Analysis started. Poll /api/analysis-status/' + $('Validate and Prepare').item.json.runId + ' for updates.' }) }}",
+        "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
       "id": "483a8704-bd26-4873-a7b5-3dd40162f0ae",
@@ -184,9 +194,267 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        416,
-        16
+        1648,
+        192
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d3c26de2-ae2b-423d-a5e6-b731243b0878",
+              "leftValue": "={{ $('Config').item.json.userId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "8f1b43cc-785e-460a-8f15-df71bfef5e21",
+              "leftValue": "={{ $('Config').item.json.brandId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "99b5fb2c-0c89-42b9-89c3-7c9ce437beaf",
+              "leftValue": "={{ $('Config').item.json.brandName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "55b30658-d844-4748-82a7-e9d98b258bf0",
+              "leftValue": "={{ $('Config').item.json.topic }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        16
+      ],
+      "id": "33c6c7be-6217-4522-a42b-c75fa38481ab",
+      "name": "Validate Inputs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Missing required parameters. Please provide: brandId, brandName, topic, and userId\",\n    \"code\": \"VALIDATION_ERROR\",\n    \"node\": \"Validate Inputs\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": false\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"duration\": Math.round(($now.toMillis() - new Date($('Config').item.json.executionStart).getTime()) / 1000)\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        336,
+        544
+      ],
+      "id": "e77bd781-0a5f-468b-a9a2-365f41a00a11",
+      "name": "Set Validation Error Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Failed to create analysis run record in database\",\n    \"code\": \"DATABASE_ERROR\",\n    \"node\": \"Create Run Record\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": true,\n    \"details\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"attemptedData\": $('Config').item.json\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        336,
+        304
+      ],
+      "id": "87ab7ff0-6146-47c7-8a1f-b1d515aa4374",
+      "name": "Set Database Error Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "da9aa696-9e82-4ecf-a020-04f85731958e",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7cc2053c-cc7e-410c-9127-2318f46c6cfe",
+      "name": "Check Subworkflow Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "data",
+              "value": "={{\n  {\n    \"runId\": $('Config').item.json.runId,\n    \"message\": \"Analysis started successfully. Poll /api/analysis-status/\" + $('Config').item.json.runId + \" for updates.\",\n    \"brandId\": $('Config').item.json.brandId,\n    \"brandName\": $('Config').item.json.brandName,\n    \"analysisResults\": $json.data\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"runId\": $('Config').item.json.runId,\n    \"message\": \"Analysis started successfully. Poll /api/analysis-status/\" + $('Config').item.json.runId + \" for updates.\",\n    \"brandId\": $('Config').item.json.brandId,\n    \"brandName\": $('Config').item.json.brandName,\n    \"analysisResults\": $json.data\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1008,
+        -32
+      ],
+      "id": "8984307a-9062-4d99-b961-109986954c13",
+      "name": "Set Success Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Analysis workflow failed\",\n    \"code\": \"SUBWORKFLOW_ERROR\",\n    \"node\": \"Trigger Processor\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": $json.error.isRetryable,\n    \"subworkflowError\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"subworkflowMetadata\": $json.metadata\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "1c074f7f-1496-40f6-9517-0264f19d964a",
+              "name": "=data",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"subworkflowMetadata\": $json.metadata\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1008,
+        128
+      ],
+      "id": "e753aab1-3463-4a5a-b0d4-9c7b3e9fee13",
+      "name": "Set Subworkflow Error Response"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1408,
+        160
+      ],
+      "id": "9e4a3d9d-cbf4-4892-98fb-7eca17650784",
+      "name": "Merge"
     }
   ],
   "pinData": {},
@@ -217,7 +485,7 @@
       "main": [
         [
           {
-            "node": "Validate and Prepare",
+            "node": "Validate Inputs",
             "type": "main",
             "index": 0
           }
@@ -226,13 +494,7 @@
     },
     "Validate and Prepare": {
       "main": [
-        [
-          {
-            "node": "Create Run Record",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Create Run Record": {
@@ -243,10 +505,108 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Set Database Error Response",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "Trigger Processor": {
+      "main": [
+        [
+          {
+            "node": "Check Subworkflow Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inputs": {
+      "main": [
+        [
+          {
+            "node": "Create Run Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Subworkflow Success": {
+      "main": [
+        [
+          {
+            "node": "Set Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Subworkflow Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Success Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Subworkflow Error Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Database Error Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Set Validation Error Response": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge": {
       "main": [
         [
           {
@@ -262,7 +622,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "e5fea0f9-4aef-4c54-9e76-4cfe155e709c",
+  "versionId": "dcac6b54-7bbb-466e-aca9-8435d0559cdb",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
