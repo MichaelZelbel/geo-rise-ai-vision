@@ -37,6 +37,12 @@ const Dashboard = () => {
   const [mentionedEngines, setMentionedEngines] = useState<string[]>([]);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [runningAnalysisId, setRunningAnalysisId] = useState<string | null>(null);
+  const [lastAnalysisRun, setLastAnalysisRun] = useState<{
+    date: string;
+    score: number;
+    mentions: number;
+  } | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -72,6 +78,72 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [topicParam, brandParam]);
 
+  // Real-time subscription AND polling for analysis status updates
+  useEffect(() => {
+    if (!runningAnalysisId || !user?.id) return;
+    
+    console.log('Subscribing to analysis status for runId:', runningAnalysisId);
+    
+    // Real-time subscription
+    const subscription = supabase
+      .channel(`analysis_run_${runningAnalysisId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'analysis_runs',
+        filter: `run_id=eq.${runningAnalysisId}`
+      }, (payload) => {
+        const status = payload.new.status;
+        console.log('Analysis status updated via realtime:', status);
+        handleAnalysisStatusChange(status);
+      })
+      .subscribe();
+
+    // Polling as backup (check every 5 seconds)
+    const pollInterval = setInterval(async () => {
+      console.log('Polling analysis status for runId:', runningAnalysisId);
+      const { data: run } = await supabase
+        .from('analysis_runs')
+        .select('status, visibility_score, total_mentions, created_at')
+        .eq('run_id', runningAnalysisId)
+        .single();
+      
+      if (run) {
+        console.log('Polled status:', run.status);
+        handleAnalysisStatusChange(run.status, run);
+      }
+    }, 5000);
+
+    // Handle status changes
+    const handleAnalysisStatusChange = (status: string, runData?: any) => {
+      if (status === 'completed') {
+        toast.success('Analysis completed! Refreshing dashboard...');
+        loadDashboardData(user.id);
+        setRunningAnalysisId(null);
+        
+        // Update last analysis run immediately if we have the data
+        if (runData) {
+          setLastAnalysisRun({
+            date: runData.created_at,
+            score: runData.visibility_score || 0,
+            mentions: runData.total_mentions || 0,
+          });
+        }
+      } else if (status === 'failed') {
+        toast.error('Analysis failed. Please try again.');
+        setRunningAnalysisId(null);
+      } else if (status === 'processing') {
+        toast.info('Analysis in progress...', { id: 'processing' });
+      }
+    };
+      
+    return () => {
+      console.log('Unsubscribing from analysis status and stopping polling');
+      subscription.unsubscribe();
+      clearInterval(pollInterval);
+    };
+  }, [runningAnalysisId, user?.id]);
+
   const createBrand = async (userId: string, brandName: string, topicName: string) => {
     try {
       const { data: newBrand, error } = await supabase.from("brands").insert({
@@ -105,8 +177,11 @@ const Dashboard = () => {
               console.error("Analysis error:", error);
               toast.error(error.message || "Failed to start analysis.");
             } else {
-              toast.success("Analysis started! We'll refresh your dashboard shortly.");
-              setTimeout(() => loadDashboardData(userId), 3000);
+              const runId = data?.data?.runId || data?.runId;
+              if (runId) {
+                setRunningAnalysisId(runId);
+              }
+              toast.success("Analysis started! We'll refresh your dashboard when complete.");
             }
           })
           .catch((err) => {
@@ -156,6 +231,23 @@ const Dashboard = () => {
         const engines = [...new Set(analysesData?.map((a) => a.ai_engine) || [])];
         setMentionedEngines(engines);
         setHasAnalysis(analysesData && analysesData.length > 0);
+
+        // Fetch latest analysis run for status card
+        const { data: latestRun } = await supabase
+          .from("analysis_runs")
+          .select("*")
+          .eq("brand_id", brandData.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestRun) {
+          setLastAnalysisRun({
+            date: latestRun.created_at,
+            score: latestRun.visibility_score || 0,
+            mentions: latestRun.total_mentions || 0,
+          });
+        }
       }
 
       setLoading(false);
@@ -214,6 +306,10 @@ const Dashboard = () => {
                 brandId={brand.id}
                 brandName={brand.name}
                 topic={brand.topic}
+                onAnalysisStarted={(runId) => setRunningAnalysisId(runId)}
+                lastRunDate={lastAnalysisRun?.date}
+                lastRunScore={lastAnalysisRun?.score}
+                lastRunMentions={lastAnalysisRun?.mentions}
               />
             </div>
 
