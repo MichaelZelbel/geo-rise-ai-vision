@@ -1,0 +1,1343 @@
+{
+  "name": "Analysis Processor Multi-Engine",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "29b19af5-42d0-4284-8946-98b477957be1",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        160
+      ],
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "71a96b11-3e0a-4f18-a193-151246538984",
+      "name": "When Called By Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        416
+      ],
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.run_id || 'run_test_' + Date.now() }}"
+            },
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.brand_id || 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.brand_name || 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.topic || 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.user_id || '7f078493-f4de-491b-8156-6f7f8f425936' }}"
+            },
+            {
+              "id": "config-ai-engine",
+              "name": "aiEngine",
+              "type": "string",
+              "value": "={{ $json.ai_engine || 'perplexity' }}"
+            },
+            {
+              "id": "config-batch-size",
+              "name": "BATCH_SIZE",
+              "type": "number",
+              "value": 1
+            },
+            {
+              "id": "config-rate-limit",
+              "name": "RATE_LIMIT_S",
+              "type": "number",
+              "value": 2
+            },
+            {
+              "id": "config-total-queries",
+              "name": "TOTAL_QUERIES",
+              "type": "number",
+              "value": 20
+            },
+            {
+              "id": "055a42c4-2f3a-48c9-9641-8d3f3ba6e8da",
+              "name": "executionStart",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "4bad60bb-ec77-408a-92cd-2acbe463fe6f",
+              "name": "workflowName",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            },
+            {
+              "id": "87320d6b-07a0-4a4a-9210-d29fe90b32fe",
+              "name": "executionId",
+              "value": "={{ $execution.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "67121338-31b5-45a3-9f9c-3604345b2383",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "analysis_runs",
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "processing"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "a513141d-c3c6-413f-8cd3-17b29fd9c20b",
+      "name": "Update Status Processing",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        160
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName;\nconst topic = config.topic;\n\nconst templates = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`\n];\n\nconst templates_all_20 = [\n  `Who are the leading experts in ${topic}?`,\n  `What are the best resources for learning about ${topic}?`,\n  `Which companies are innovating in ${topic}?`,\n  `Who should I follow for ${topic} insights?`,\n  `What are the top ${topic} solutions?`,\n  `Which thought leaders discuss ${topic}?`,\n  `What are the latest trends in ${topic}?`,\n  `Who are the pioneers of ${topic}?`,\n  `What tools exist for ${topic}?`,\n  `Which brands are known for ${topic}?`,\n  `Who writes about ${topic}?`,\n  `What are the best ${topic} platforms?`,\n  `Which influencers cover ${topic}?`,\n  `What ${topic} services are available?`,\n  `Who provides ${topic} consulting?`,\n  `What are popular ${topic} courses?`,\n  `Which ${topic} podcasts should I listen to?`,\n  `Who are the ${topic} innovators?`,\n  `What ${topic} communities exist?`,\n  `Which ${topic} conferences are important?`\n];\n\nconst output = templates.map((query, index) => ({\n  json: {\n    query: query,\n    queryIndex: index + 1\n  }\n}));\n\nreturn output;"
+      },
+      "id": "ba20fb60-feb6-414b-9f40-9c3666f10677",
+      "name": "Generate Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": "={{ $('Config').item.json.BATCH_SIZE }}",
+        "options": {}
+      },
+      "id": "eeaad94c-d87c-4f5c-8185-43a72c2ef0f8",
+      "name": "Split Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1648,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll"
+      },
+      "id": "abc123-route-by-engine",
+      "name": "Route By Engine",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1872,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "switch-perplexity",
+                    "leftValue": "={{ $('Config').item.json.aiEngine }}",
+                    "rightValue": "perplexity",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "perplexity"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "switch-chatgpt",
+                    "leftValue": "={{ $('Config').item.json.aiEngine }}",
+                    "rightValue": "chatgpt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "chatgpt"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "switch-claude",
+                    "leftValue": "={{ $('Config').item.json.aiEngine }}",
+                    "rightValue": "claude",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "claude"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "def456-switch-engine",
+      "name": "Switch Engine",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2096,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "messages": {
+          "message": [
+            {
+              "content": "={{ $('Split Batches').item.json.query }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.2
+        },
+        "requestOptions": {}
+      },
+      "id": "0caf3381-f424-4ce1-a81f-e3bfa2316534",
+      "name": "Call Perplexity",
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        240
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "perplexityApi": {
+          "id": "Got1FXNW3Tw0Ynhd",
+          "name": "Perplexity account"
+        }
+      },
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Split Batches').item.json.query }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.2
+        }
+      },
+      "id": "chatgpt-node-id",
+      "name": "Call ChatGPT",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        2320,
+        432
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-cred-id",
+          "name": "OpenAI account"
+        }
+      },
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $('Split Batches').item.json.query }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 1000,
+          "temperature": 0.2
+        }
+      },
+      "id": "claude-node-id",
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.anthropic",
+      "typeVersion": 1.3,
+      "position": [
+        2320,
+        624
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-cred-id",
+          "name": "Anthropic account"
+        }
+      },
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle unsupported AI engine\nconst config = $('Config').item.json;\nconst queryData = $('Split Batches').item.json;\n\nthrow new Error(`Unsupported AI engine: ${config.aiEngine}. Supported engines are: perplexity, chatgpt, claude`);"
+      },
+      "id": "unsupported-engine-id",
+      "name": "Unsupported Engine Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize Perplexity response format\nconst response = $json;\n\nreturn {\n  json: {\n    content: response.choices[0].message.content,\n    citations: response.citations || [],\n    engine: 'perplexity'\n  }\n};"
+      },
+      "id": "normalize-perplexity-id",
+      "name": "Normalize Perplexity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize ChatGPT response format\nconst response = $json;\n\nreturn {\n  json: {\n    content: response.choices[0].message.content,\n    citations: [],\n    engine: 'chatgpt'\n  }\n};"
+      },
+      "id": "normalize-chatgpt-id",
+      "name": "Normalize ChatGPT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize Claude response format\nconst response = $json;\n\nreturn {\n  json: {\n    content: response.content[0].text,\n    citations: [],\n    engine: 'claude'\n  }\n};"
+      },
+      "id": "normalize-claude-id",
+      "name": "Normalize Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "merge-normalized-id",
+      "name": "Merge Normalized",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2768,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Config').item.json.RATE_LIMIT_S }}"
+      },
+      "id": "0b6c367d-c0cc-4780-a0dd-0c96f0ba7ddf",
+      "name": "Rate Limit Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2992,
+        432
+      ],
+      "webhookId": "rate-limit-delay"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Config').item.json;\nconst brandName = config.brandName.toLowerCase();\nconst normalizedData = $json;\nconst queryData = $('Split Batches').item.json;\n\nconst response = normalizedData.content;\nconst citations = normalizedData.citations || [];\n\nconst lowerContent = response.toLowerCase();\nconst mentioned = lowerContent.includes(brandName);\n\nlet position = null;\nlet context = null;\n\nif (mentioned) {\n  const firstIndex = lowerContent.indexOf(brandName);\n  \n  // Position scoring based on location in response\n  if (firstIndex < 100) position = 1;\n  else if (firstIndex < 300) position = 2;\n  else if (firstIndex < 600) position = 3;\n  else position = 4;\n  \n  // Extract context around mention\n  const contextStart = Math.max(0, firstIndex - 100);\n  const contextEnd = Math.min(response.length, firstIndex + brandName.length + 100);\n  context = '...' + response.substring(contextStart, contextEnd) + '...';\n}\n\nconst mentionType = mentioned ? (citations.length > 0 ? 'citation' : 'name_only') : null;\n\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: config.aiEngine,\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: mentioned,\n    position: position,\n    mention_type: mentionType,\n    sentiment: 'neutral',\n    url: citations.length > 0 ? citations[0] : null,\n    context: context,\n    full_response: response.substring(0, 1000),\n    occurred_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "aca616ef-5902-4161-af9a-52d074fe4ea5",
+      "name": "Analyze Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3216,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "analyses",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "run_id",
+              "fieldValue": "={{ $json.run_id }}"
+            },
+            {
+              "fieldId": "brand_id",
+              "fieldValue": "={{ $json.brand_id }}"
+            },
+            {
+              "fieldId": "ai_engine",
+              "fieldValue": "={{ $json.ai_engine }}"
+            },
+            {
+              "fieldId": "query",
+              "fieldValue": "={{ $json.query }}"
+            },
+            {
+              "fieldId": "mentioned",
+              "fieldValue": "={{ $json.mentioned }}"
+            },
+            {
+              "fieldId": "position",
+              "fieldValue": "={{ $json.position }}"
+            },
+            {
+              "fieldId": "mention_type",
+              "fieldValue": "={{ $json.mention_type }}"
+            },
+            {
+              "fieldId": "sentiment",
+              "fieldValue": "={{ $json.sentiment }}"
+            },
+            {
+              "fieldId": "url",
+              "fieldValue": "={{ $json.url }}"
+            },
+            {
+              "fieldId": "context",
+              "fieldValue": "={{ $json.context }}"
+            },
+            {
+              "fieldId": "full_response",
+              "fieldValue": "={{ $json.full_response }}"
+            },
+            {
+              "fieldId": "occurred_at",
+              "fieldValue": "={{ $json.occurred_at }}"
+            }
+          ]
+        }
+      },
+      "id": "95dd194a-cb17-4da3-b1b4-750225a5f1e7",
+      "name": "Save Query Result",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3440,
+        656
+      ],
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log failed query\nconst config = $('Config').item.json;\nconst queryData = $('Split Batches').item.json;\nconst error = $json.error || { message: 'API call failed' };\n\nconsole.error(`Query ${queryData.queryIndex} failed for ${config.aiEngine}:`, error.message);\n\n// Return minimal result for failed query\nreturn {\n  json: {\n    brand_id: config.brandId,\n    run_id: config.runId,\n    ai_engine: config.aiEngine,\n    query: queryData.query,\n    query_index: queryData.queryIndex,\n    mentioned: false,\n    position: null,\n    mention_type: null,\n    sentiment: null,\n    url: null,\n    context: null,\n    full_response: `ERROR: ${error.message}`,\n    occurred_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "acba2894-f83d-4c5c-99b0-e3d4298616bf",
+      "name": "Handle API Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2992,
+        656
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1b57228a-88c9-4969-b1c1-c0acdf769de6",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        3216,
+        656
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9914fe5d-d674-4cd8-a0d6-f14bb04daae4",
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3648,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "analyses",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}&ai_engine=eq.{{ $('Config').item.json.aiEngine }}"
+      },
+      "id": "2c0c05d3-fd33-4b30-ae6d-2605bf6a4ce5",
+      "name": "Get Analyses",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        160
+      ],
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const analyses = $input.all().map(item => item.json);\nconst totalQueries = analyses.length;\nconst totalMentions = analyses.filter(a => a.mentioned === true).length;\nconst mentionRate = totalQueries > 0 ? Math.round((totalMentions / totalQueries) * 100 * 100) / 100 : 0;\nconst topPositionCount = analyses.filter(a => a.position === 1).length;\nconst citationCount = analyses.filter(a => a.mention_type === 'citation').length;\nconst positionsArray = analyses.filter(a => a.position !== null).map(a => a.position);\nconst avgPosition = positionsArray.length > 0 ? Math.round((positionsArray.reduce((sum, p) => sum + p, 0) / positionsArray.length) * 10) / 10 : null;\n\nreturn {\n  json: {\n    total_queries: totalQueries,\n    total_mentions: totalMentions,\n    mention_rate: mentionRate,\n    visibility_score: mentionRate,\n    top_position_count: topPositionCount,\n    citation_count: citationCount,\n    avg_position: avgPosition\n  }\n};"
+      },
+      "id": "69acd0b1-928e-4324-8d9f-b973efd48737",
+      "name": "Calculate Scores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "analysis_runs",
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').first().json.runId }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "completed"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "progress",
+              "fieldValue": "100"
+            },
+            {
+              "fieldId": "total_queries",
+              "fieldValue": "={{ $json.total_queries }}"
+            },
+            {
+              "fieldId": "queries_completed",
+              "fieldValue": "={{ $json.total_queries }}"
+            },
+            {
+              "fieldId": "total_mentions",
+              "fieldValue": "={{ $json.total_mentions }}"
+            },
+            {
+              "fieldId": "mention_rate",
+              "fieldValue": "={{ $json.mention_rate }}"
+            },
+            {
+              "fieldId": "visibility_score",
+              "fieldValue": "={{ $json.visibility_score }}"
+            },
+            {
+              "fieldId": "top_position_count",
+              "fieldValue": "={{ $json.top_position_count }}"
+            },
+            {
+              "fieldId": "citation_count",
+              "fieldValue": "={{ $json.citation_count }}"
+            },
+            {
+              "fieldId": "avg_position",
+              "fieldValue": "={{ $json.avg_position }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "3a8518ec-4fae-4bbe-9a44-cf1f2a6664d8",
+      "name": "Update Status Completed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        160
+      ],
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Always Return, Never Throw\n**because it is a subworkflow\n\n## Multi-Engine Support\nThis workflow supports: perplexity, chatgpt, claude\nPass ai_engine parameter when calling",
+        "height": 280,
+        "width": 740
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "bdc0825c-0c3c-43f4-94c1-e8f3292e38d3",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d3c26de2-ae2b-423d-a5e6-b731243b0878",
+              "leftValue": "={{ $('Config').item.json.runId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "8f1b43cc-785e-460a-8f15-df71bfef5e21",
+              "leftValue": "={{ $('Config').item.json.brandId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "99b5fb2c-0c89-42b9-89c3-7c9ce437beaf",
+              "leftValue": "={{ $('Config').item.json.brandName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "55b30658-d844-4748-82a7-e9d98b258bf0",
+              "leftValue": "={{ $('Config').item.json.topic }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ai-engine-validation",
+              "leftValue": "={{ $('Config').item.json.aiEngine }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        160
+      ],
+      "id": "1850b6f4-67d6-4274-a029-6d5684b7f4a2",
+      "name": "Validate Inputs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Missing required parameters. Please provide: runId, brandId, brandName, topic, and ai_engine\",\n    \"code\": \"VALIDATION_ERROR\",\n    \"node\": \"Validate Inputs\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": false\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $('Config').item.json.executionId,\n    \"workflowName\": $('Config').item.json.workflowName\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        608
+      ],
+      "id": "2edb055c-e829-45ee-afd5-b38e36158a07",
+      "name": "Set Input Validation Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": `Database operation failed: ${$json.error?.message || 'Unknown database error'}`,\n    \"code\": \"DATABASE_ERROR\",\n    \"node\": \"Database Operation\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": true,\n    \"details\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"runId\": $('Config').first().json.runId\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3648,
+        432
+      ],
+      "id": "7240d5f1-35fd-4619-9b45-fc0ad906aa7c",
+      "name": "Set Database Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "data",
+              "value": "={{\n  {\n    \"runId\": $('Config').first().json.runId,\n    \"brandId\": $('Config').first().json.brandId,\n    \"brandName\": $('Config').first().json.brandName,\n    \"aiEngine\": $('Config').first().json.aiEngine,\n    \"totalQueries\": $('Calculate Scores').first().json.total_queries,\n    \"totalMentions\": $('Calculate Scores').first().json.total_mentions,\n    \"mentionRate\": $('Calculate Scores').first().json.mention_rate,\n    \"visibilityScore\": $('Calculate Scores').first().json.visibility_score,\n    \"topPositionCount\": $('Calculate Scores').first().json.top_position_count,\n    \"citationCount\": $('Calculate Scores').first().json.citation_count,\n    \"avgPosition\": $('Calculate Scores').first().json.avg_position,\n    \"status\": \"completed\",\n    \"completedAt\": $now.toISO()\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $('Config').first().json.executionId,\n    \"workflowName\": $('Config').first().json.workflowName,\n    \"duration\": Math.round(($now.toMillis() - new Date($('Config').first().json.executionStart).getTime()) / 1000)\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2544,
+        160
+      ],
+      "id": "523c0cd1-2980-4b4b-990f-64684bddd121",
+      "name": "Set Success Response"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3056,
+        448
+      ],
+      "id": "47ee5661-9d6f-44db-b9b5-efda98213352",
+      "name": "Merge All Paths"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        448
+      ],
+      "id": "6ab2f3d1-ef0d-46a4-8634-82c9b17438e8",
+      "name": "Return Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Called By Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validate Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Processing": {
+      "main": [
+        [
+          {
+            "node": "Generate Queries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Queries": {
+      "main": [
+        [
+          {
+            "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Batches": {
+      "main": [
+        [
+          {
+            "node": "Get Analyses",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route By Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route By Engine": {
+      "main": [
+        [
+          {
+            "node": "Switch Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Engine": {
+      "main": [
+        [
+          {
+            "node": "Call Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call ChatGPT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Claude",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unsupported Engine Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Normalize Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle API Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call ChatGPT": {
+      "main": [
+        [
+          {
+            "node": "Normalize ChatGPT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle API Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude": {
+      "main": [
+        [
+          {
+            "node": "Normalize Claude",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle API Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Merge Normalized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize ChatGPT": {
+      "main": [
+        [
+          {
+            "node": "Merge Normalized",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Normalize Claude": {
+      "main": [
+        [
+          {
+            "node": "Merge Normalized",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge Normalized": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Delay": {
+      "main": [
+        [
+          {
+            "node": "Analyze Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Response": {
+      "main": [
+        [
+          {
+            "node": "Save Query Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Query Result": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle API Error": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Save Query Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back": {
+      "main": [
+        [
+          {
+            "node": "Split Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Analyses": {
+      "main": [
+        [
+          {
+            "node": "Calculate Scores",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Scores": {
+      "main": [
+        [
+          {
+            "node": "Update Status Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Completed": {
+      "main": [
+        [
+          {
+            "node": "Set Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inputs": {
+      "main": [
+        [
+          {
+            "node": "Update Status Processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Input Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input Validation Error": {
+      "main": [
+        [
+          {
+            "node": "Merge All Paths",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Set Database Error": {
+      "main": [
+        [
+          {
+            "node": "Merge All Paths",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Success Response": {
+      "main": [
+        [
+          {
+            "node": "Merge All Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Paths": {
+      "main": [
+        [
+          {
+            "node": "Return Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "multi-engine-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "MultiEngineProcessor",
+  "tags": []
+}
