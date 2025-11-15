@@ -86,7 +86,7 @@ export default function Account() {
           </TabsList>
 
           <TabsContent value="profile">
-            <ProfileSection user={user} profile={profile} onUpdate={checkAuth} />
+            <ProfileSection user={user} />
           </TabsContent>
 
           <TabsContent value="brands">

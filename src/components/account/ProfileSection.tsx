@@ -7,33 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-export default function ProfileSection({ user, profile, onUpdate }: any) {
-  const [name, setName] = useState(profile?.email?.split("@")[0] || "");
-  const [saving, setSaving] = useState(false);
+export default function ProfileSection({ user }: any) {
   const [newEmail, setNewEmail] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-
-  const handleSaveProfile = async () => {
-    setSaving(true);
-    
-    const { error } = await supabase
-      .from("profiles")
-      .update({ email: user.email })
-      .eq("id", user.id);
-
-    if (error) {
-      toast.error("Failed to update profile");
-    } else {
-      toast.success("Profile updated successfully");
-      onUpdate();
-    }
-    
-    setSaving(false);
-  };
 
   const handleChangeEmail = async () => {
     if (!newEmail || !newEmail.includes("@")) {
@@ -74,7 +53,6 @@ export default function ProfileSection({ user, profile, onUpdate }: any) {
     } else {
       toast.success("Password updated successfully");
       setPasswordDialogOpen(false);
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }
@@ -176,9 +154,18 @@ export default function ProfileSection({ user, profile, onUpdate }: any) {
           </Dialog>
         </div>
 
-        <Button onClick={handleSaveProfile} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
-        </Button>
+        <div className="space-y-2 pt-4 border-t">
+          <Label>User ID</Label>
+          <Input value={user?.id || ""} disabled className="font-mono text-xs" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Account Created</Label>
+          <Input 
+            value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : ""} 
+            disabled 
+          />
+        </div>
       </CardContent>
     </Card>
   );
