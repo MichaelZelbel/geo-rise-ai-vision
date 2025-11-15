@@ -1,0 +1,936 @@
+{
+  "name": "GEORISE Analysis Starter",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "267c9e28-747f-43b9-aec0-1022a04974c3",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -64
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "georise-analysis-start",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8ef9be51-fee9-4744-ad6f-aca0c23d3328",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        -240
+      ],
+      "webhookId": "georise-analysis-start",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandId : 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandName : 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.topic : 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.userId : '7f078493-f4de-491b-8156-6f7f8f425936' }}"
+            },
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ 'run_' + Date.now() + '_' + ($json.body ? $json.body.brandId : 'test') }}"
+            },
+            {
+              "id": "config-timestamp",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a5a2ddc-22a9-41ab-95b7-cf7151fbae8a",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_runs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "run_id",
+              "fieldValue": "={{ $('Config').item.json.runId }}"
+            },
+            {
+              "fieldId": "brand_id",
+              "fieldValue": "={{ $('Config').item.json.brandId }}"
+            },
+            {
+              "fieldId": "brand_name",
+              "fieldValue": "={{ $('Config').item.json.brandName }}"
+            },
+            {
+              "fieldId": "topic",
+              "fieldValue": "={{ $('Config').item.json.topic }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $json.timestamp }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.userId }}"
+            }
+          ]
+        }
+      },
+      "id": "8e8bac60-1564-4cb3-9b59-6229664b5ad1",
+      "name": "Create Run Record",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        48,
+        -256
+      ],
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "6cf3f73c-ca48-4f3f-8319-7228dc08ad62",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d3c26de2-ae2b-423d-a5e6-b731243b0878",
+              "leftValue": "={{ $('Config').item.json.userId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "8f1b43cc-785e-460a-8f15-df71bfef5e21",
+              "leftValue": "={{ $('Config').item.json.brandId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "99b5fb2c-0c89-42b9-89c3-7c9ce437beaf",
+              "leftValue": "={{ $('Config').item.json.brandName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "55b30658-d844-4748-82a7-e9d98b258bf0",
+              "leftValue": "={{ $('Config').item.json.topic }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        -240
+      ],
+      "id": "f1697534-7c8e-4bdf-b1d9-4b301edb384d",
+      "name": "Validate Inputs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Missing required parameters. Please provide: brandId, brandName, topic, and userId\",\n    \"code\": \"VALIDATION_ERROR\",\n    \"node\": \"Validate Inputs\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": false\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"duration\": Math.round(($now.toMillis() - new Date($('Config').item.json.executionStart).getTime()) / 1000)\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        304
+      ],
+      "id": "7ee2bb1b-aeff-4f89-835b-4e16fc4e462d",
+      "name": "Set Validation Error Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Failed to create analysis run record in database\",\n    \"code\": \"DATABASE_ERROR\",\n    \"node\": \"Create Run Record\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": true,\n    \"details\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"attemptedData\": $('Config').item.json\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        96
+      ],
+      "id": "22fbd9b4-0a9a-4fa7-a39f-972f5bee109c",
+      "name": "Set Database Error Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": "={{ true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "data",
+              "value": "={{ {\n  runId: $('Config').item.json.runId,\n  message: $json.success \n    ? 'Analysis started successfully for both AI engines. Poll /api/analysis-status/' + $('Config').item.json.runId + ' for updates.' \n    : 'Analysis started with partial success. Poll /api/analysis-status/' + $('Config').item.json.runId + ' for updates.',\n  brandId: $('Config').item.json.brandId,\n  brandName: $('Config').item.json.brandName,\n  processors: $json.summary,\n  results: {\n    perplexity: $json.data.perplexity,\n    chatgpt: $json.data.chatgpt\n  },\n  errors: $json.partialSuccess ? $json.errors : null\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{ {\n  executionId: $execution.id,\n  workflowName: $workflow.name,\n  processors: $json.metadata\n} }}",
+              "type": "object"
+            },
+            {
+              "id": "d51c0918-abcb-40b9-9a40-63a269af806c",
+              "name": "partialSuccess",
+              "value": "={{ $json.partialSuccess }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -384
+      ],
+      "id": "eac63a48-9ba3-4c92-85dc-945380b65a15",
+      "name": "Set Success Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    message: 'Analysis workflows failed',\n    code: $json.success === false && $json.partialSuccess === false ? 'ALL_PROCESSORS_FAILED' : 'PARTIAL_PROCESSOR_FAILURE',\n    timestamp: $now.toISO(),\n    isRetryable: true,\n    errors: {\n      perplexity: $json.errors.perplexity,\n      chatgpt: $json.errors.chatgpt\n    },\n    summary: $json.summary\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "metadata",
+              "value": "={{\n  {\n    executionId: $execution.id,\n    workflowName: $workflow.name,\n    processors: $json.metadata\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "1c074f7f-1496-40f6-9517-0264f19d964a",
+              "name": "=data",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"subworkflowMetadata\": $json.metadata\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -112
+      ],
+      "id": "b77b750f-8a93-4c85-a585-b2de77772ebf",
+      "name": "Set Subworkflow Error Response"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "WWUGrxNJO79VP7Ig",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/WWUGrxNJO79VP7Ig",
+          "cachedResultName": "Analysis Processor Multi-Engine"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "brand_id": "={{ $json.brand_id }}",
+            "topic": "={{ $json.topic }}",
+            "brand_name": "={{ $json.brand_name }}",
+            "user_id": "={{ $json.user_id }}",
+            "ai_engine": "chatgpt"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand_id",
+              "displayName": "brand_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand_name",
+              "displayName": "brand_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "ai_engine",
+              "displayName": "ai_engine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "5bbc0841-0890-4c61-8993-fc4d31de0adc",
+      "name": "Process ChatGPT",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        -448
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        576,
+        -288
+      ],
+      "id": "dd557cdd-e010-4df7-a562-14f4a7e86787",
+      "name": "Merge Processor Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get results from both processors\nconst allResults = $input.all();\n\nconst perplexityResult = allResults[0]?.json || {};\nconst chatgptResult = allResults[1]?.json || {};\n\nconst perplexitySuccess = perplexityResult.success === true;\nconst chatgptSuccess = chatgptResult.success === true;\n\n// Determine overall status\nconst bothSucceeded = perplexitySuccess && chatgptSuccess;\nconst partialSuccess = perplexitySuccess || chatgptSuccess;\nconst bothFailed = !perplexitySuccess && !chatgptSuccess;\n\n// Combine data from successful processors\nconst combinedData = {\n  perplexity: perplexitySuccess ? perplexityResult.data : null,\n  chatgpt: chatgptSuccess ? chatgptResult.data : null\n};\n\n// Combine errors from failed processors\nconst combinedErrors = {\n  perplexity: !perplexitySuccess ? perplexityResult.error : null,\n  chatgpt: !chatgptSuccess ? chatgptResult.error : null\n};\n\n// Return combined result\nreturn {\n  json: {\n    success: bothSucceeded,\n    partialSuccess: partialSuccess && !bothSucceeded,\n    data: combinedData,\n    errors: combinedErrors,\n    summary: {\n      perplexityStatus: perplexitySuccess ? 'completed' : 'failed',\n      chatgptStatus: chatgptSuccess ? 'completed' : 'failed',\n      totalProcessors: 2,\n      successfulProcessors: (perplexitySuccess ? 1 : 0) + (chatgptSuccess ? 1 : 0)\n    },\n    metadata: {\n      perplexity: perplexityResult.metadata,\n      chatgpt: chatgptResult.metadata\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -272
+      ],
+      "id": "0ee64627-be92-4d9d-aae8-df8624fcfc0e",
+      "name": "Combine Results"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "da9aa696-9e82-4ecf-a020-04f85731958e",
+              "leftValue": "={{ $json.success === true || $json.partialSuccess === true }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "59055052-4c28-4296-bb25-05ad6b5375ca",
+      "name": "Check Processor Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "WWUGrxNJO79VP7Ig",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/WWUGrxNJO79VP7Ig",
+          "cachedResultName": "Analysis Processor Multi-Engine"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "brand_id": "={{ $json.brand_id }}",
+            "topic": "={{ $json.topic }}",
+            "brand_name": "={{ $json.brand_name }}",
+            "user_id": "={{ $json.user_id }}",
+            "ai_engine": "perplexity"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand_id",
+              "displayName": "brand_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand_name",
+              "displayName": "brand_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "ai_engine",
+              "displayName": "ai_engine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "07ecb868-6fe2-4a63-851e-2d1c3113ba7d",
+      "name": "Process Perplexity",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        -272
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "WWUGrxNJO79VP7Ig",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/WWUGrxNJO79VP7Ig",
+          "cachedResultName": "Analysis Processor Multi-Engine"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "brand_id": "={{ $json.brand_id }}",
+            "topic": "={{ $json.topic }}",
+            "brand_name": "={{ $json.brand_name }}",
+            "user_id": "={{ $json.user_id }}",
+            "ai_engine": "claude"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand_id",
+              "displayName": "brand_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand_name",
+              "displayName": "brand_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "ai_engine",
+              "displayName": "ai_engine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "ccaa56f2-bf14-414c-b5a4-67de34c27a0c",
+      "name": "Process Claude",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        -96
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validate Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Run Record": {
+      "main": [
+        [
+          {
+            "node": "Process ChatGPT",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Process Perplexity",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Process Claude",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inputs": {
+      "main": [
+        [
+          {
+            "node": "Create Run Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Subworkflow Error Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Database Error Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Validation Error Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process ChatGPT": {
+      "main": [
+        [
+          {
+            "node": "Merge Processor Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Processor Results": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Processor Success": {
+      "main": [
+        [
+          {
+            "node": "Set Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Subworkflow Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Results": {
+      "main": [
+        [
+          {
+            "node": "Check Processor Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Merge Processor Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Process Claude": {
+      "main": [
+        [
+          {
+            "node": "Merge Processor Results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v0",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "afa68564-7bf9-4a1a-a37c-c1793343dc40",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "4LCjkVi8tY9JNo3G",
+  "tags": []
+}
