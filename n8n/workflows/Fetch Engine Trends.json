@@ -1,0 +1,306 @@
+{
+  "name": "Fetch Engine Trends",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-01",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-daily",
+      "name": "Run Daily at 2 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://trends.google.com/trends/api/widgetdata/multiline?hl=en-US&q=ChatGPT,Claude,Gemini,Kimi,Perplexity&date=today 1-m&geo=US",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 5
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "http-fetch-trends",
+      "name": "Fetch Google Trends Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Google Trends response and calculate weights\n// The response starts with )]}' which needs to be stripped\n\nconst ENGINES = ['chatgpt', 'claude', 'gemini', 'kimi', 'perplexity'];\nconst ENGINE_LABELS = ['ChatGPT', 'Claude', 'Gemini', 'Kimi', 'Perplexity'];\n\ntry {\n  // Get the response body\n  let rawData = $input.item.json.data || $input.item.json.body || $input.item.json;\n  \n  // If it's already a string, use it; otherwise stringify\n  if (typeof rawData !== 'string') {\n    rawData = JSON.stringify(rawData);\n  }\n  \n  // Remove the security prefix )]}'\n  const jsonStr = rawData.replace(/^\\)\\]\\}',?\\s*/, '');\n  const data = JSON.parse(jsonStr);\n  \n  // Extract timeline data from the response\n  const timelineData = data.default?.timelineData || [];\n  \n  if (!timelineData || timelineData.length === 0) {\n    throw new Error('No timeline data found in response');\n  }\n  \n  // Get the most recent data point\n  const latestPoint = timelineData[timelineData.length - 1];\n  const values = latestPoint.value || [];\n  \n  // Calculate total for normalization\n  const total = values.reduce((sum, val) => sum + (val || 0), 0);\n  \n  if (total === 0) {\n    throw new Error('Total trend value is zero, cannot calculate weights');\n  }\n  \n  // Calculate normalized weights\n  const weights = {};\n  const rawValues = {};\n  \n  for (let i = 0; i < ENGINES.length && i < values.length; i++) {\n    const rawValue = values[i] || 0;\n    rawValues[ENGINES[i]] = rawValue;\n    weights[ENGINES[i]] = rawValue / total;\n  }\n  \n  // Get timestamp from the data point or use current time\n  const timestamp = latestPoint.formattedTime \n    ? new Date(latestPoint.formattedTime).toISOString() \n    : new Date().toISOString();\n  \n  return {\n    json: {\n      timestamp: timestamp,\n      chatgpt_weight: weights.chatgpt || 0,\n      claude_weight: weights.claude || 0,\n      gemini_weight: weights.gemini || 0,\n      kimi_weight: weights.kimi || 0,\n      perplexity_weight: weights.perplexity || 0,\n      chatgpt_raw: rawValues.chatgpt || 0,\n      claude_raw: rawValues.claude || 0,\n      gemini_raw: rawValues.gemini || 0,\n      kimi_raw: rawValues.kimi || 0,\n      perplexity_raw: rawValues.perplexity || 0,\n      total_value: total,\n      data_points: timelineData.length,\n      source: 'google_trends_api'\n    }\n  };\n  \n} catch (error) {\n  // Return error information for debugging\n  return {\n    json: {\n      error: true,\n      error_message: error.message,\n      timestamp: new Date().toISOString(),\n      raw_response: $input.item.json.data ? $input.item.json.data.substring(0, 500) : 'No data'\n    }\n  };\n}"
+      },
+      "id": "code-parse-and-calculate",
+      "name": "Parse and Calculate Weights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-no-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notExists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-success",
+      "name": "Parse Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO engine_trends (\n  timestamp,\n  chatgpt_weight,\n  claude_weight,\n  gemini_weight,\n  kimi_weight,\n  perplexity_weight,\n  chatgpt_raw_value,\n  claude_raw_value,\n  gemini_raw_value,\n  kimi_raw_value,\n  perplexity_raw_value,\n  total_value,\n  data_points,\n  source\n) VALUES (\n  '{{ $json.timestamp }}',\n  {{ $json.chatgpt_weight }},\n  {{ $json.claude_weight }},\n  {{ $json.gemini_weight }},\n  {{ $json.kimi_weight }},\n  {{ $json.perplexity_weight }},\n  {{ $json.chatgpt_raw }},\n  {{ $json.claude_raw }},\n  {{ $json.gemini_raw }},\n  {{ $json.kimi_raw }},\n  {{ $json.perplexity_raw }},\n  {{ $json.total_value }},\n  {{ $json.data_points }},\n  '{{ $json.source }}'\n)\nRETURNING id, timestamp;",
+        "options": {}
+      },
+      "id": "postgres-insert",
+      "name": "Store in Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        560,
+        80
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "8JtqZlIJ0j4maMrW",
+          "name": "Postgres Lovable Georise"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format success message\nconst data = $json;\n\nreturn {\n  json: {\n    success: true,\n    message: 'Engine trends successfully stored',\n    timestamp: data.timestamp,\n    summary: {\n      chatgpt: `${(data.chatgpt_weight * 100).toFixed(2)}% (${data.chatgpt_raw})`,\n      claude: `${(data.claude_weight * 100).toFixed(2)}% (${data.claude_raw})`,\n      gemini: `${(data.gemini_weight * 100).toFixed(2)}% (${data.gemini_raw})`,\n      kimi: `${(data.kimi_weight * 100).toFixed(2)}% (${data.kimi_raw})`,\n      perplexity: `${(data.perplexity_weight * 100).toFixed(2)}% (${data.perplexity_raw})`\n    }\n  }\n};"
+      },
+      "id": "code-success-message",
+      "name": "Format Success Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log error details\nconst errorData = $('Parse and Calculate Weights').item.json;\n\nconst errorMessage = `Failed to fetch or parse Google Trends data:\n\nError: ${errorData.error_message}\nTimestamp: ${errorData.timestamp}\nRaw Response Preview: ${errorData.raw_response}\n\nPlease check:\n1. Google Trends API URL is accessible\n2. Response format hasn't changed\n3. Network connectivity`;\n\nreturn {\n  json: {\n    success: false,\n    error: errorData.error_message,\n    timestamp: errorData.timestamp,\n    emailSubject: '⚠️ Engine Trends Fetch Failed',\n    emailBody: errorMessage\n  }\n};"
+      },
+      "id": "code-error-message",
+      "name": "Format Error Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "michael@zelbel.de",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "id": "gmail-error-notification",
+      "name": "Send Error Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        320
+      ],
+      "webhookId": "engine-trends-error-webhook",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5orzzYCOIwoyw44",
+          "name": "Gmail account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "noop-end",
+      "name": "End",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        200
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Fetch Google Trends Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Daily at 2 AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch Google Trends Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Google Trends Data": {
+      "main": [
+        [
+          {
+            "node": "Parse and Calculate Weights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse and Calculate Weights": {
+      "main": [
+        [
+          {
+            "node": "Parse Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Success?": {
+      "main": [
+        [
+          {
+            "node": "Store in Database",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in Database": {
+      "main": [
+        [
+          {
+            "node": "Format Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Success Message": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Message": {
+      "main": [
+        [
+          {
+            "node": "Send Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Error Email": {
+      "main": [
+        [
+          {
+            "node": "End",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "engine-trends-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "FetchEngineTrends2025",
+  "tags": []
+}
