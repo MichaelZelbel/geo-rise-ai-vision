@@ -475,9 +475,67 @@ For Supabase via PostgreSQL node:
 
 ## Calling Other Workflows
 
-### Execute Workflow Node
+### Execute Workflow Trigger (Modern Pattern)
+
+**CRITICAL: Define Parameters in the Sub-Workflow Trigger**
+
+The Execute Workflow Trigger should **define its expected parameters** using "Input Data Mode: Define using fields below". This creates a contract that auto-populates in the calling workflow's Execute Workflow node.
+
+**In the called workflow:**
+
+```json
+{
+  "name": "When Called By Another Workflow",
+  "type": "n8n-nodes-base.executeWorkflowTrigger",
+  "typeVersion": 1,
+  "position": [250, 300],
+  "parameters": {
+    "triggerMode": "manual",
+    "inputDataMode": "define",
+    "inputDataFields": {
+      "values": [
+        {
+          "fieldName": "run_id",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "brand_id",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "brand_name",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "topic",
+          "fieldType": "string",
+          "required": true
+        },
+        {
+          "fieldName": "ai_engine",
+          "fieldType": "string",
+          "required": false
+        }
+      ]
+    }
+  }
+}
+```
+
+**Benefits of defining parameters:**
+- Auto-populates fields in the calling workflow's Execute Workflow node
+- Clear documentation of what the sub-workflow expects
+- Type validation at design time
+- Better error messages when parameters are missing
+
+### Execute Workflow Node (Calling Workflow)
 
 **Use Execute Workflow node to call other n8n workflows:**
+
+After selecting the sub-workflow, n8n automatically shows the defined input fields. Fill them in:
 
 ```json
 {
@@ -489,8 +547,15 @@ For Supabase via PostgreSQL node:
     "workflowId": {
       "__rl": true,
       "mode": "list",
-      "value": "",
-      "cachedResultName": "Processor Workflow Name"
+      "value": "workflow-id",
+      "cachedResultName": "Processor Workflow"
+    },
+    "inputData": {
+      "run_id": "={{ $json.run_id }}",
+      "brand_id": "={{ $json.brand_id }}",
+      "brand_name": "={{ $json.brand_name }}",
+      "topic": "={{ $json.topic }}",
+      "ai_engine": "perplexity"
     },
     "options": {
       "waitForCompletion": false
@@ -499,38 +564,60 @@ For Supabase via PostgreSQL node:
 }
 ```
 
-### Execute Workflow Trigger
+### Data Flow Between Workflows
 
-**In the called workflow, use Execute Workflow Trigger:**
+**In the sub-workflow - access via trigger using .first():**
+
+```javascript
+// Access the parameters passed from parent workflow
+const data = $('When Called By Another Workflow').first().json;
+const runId = data.run_id;
+const brandId = data.brand_id;
+const brandName = data.brand_name;
+const topic = data.topic;
+const aiEngine = data.ai_engine;
+```
+
+**Best Practice - Use Config Node Pattern:**
 
 ```json
 {
-  "name": "When Called By Another Workflow",
-  "type": "n8n-nodes-base.executeWorkflowTrigger",
-  "typeVersion": 1,
-  "position": [250, 300],
-  "parameters": {}
-}
-```
-
-### Data Flow Between Workflows
-
-Data passed from Execute Workflow node is available in the triggered workflow:
-
-```javascript
-// In parent workflow
-{
-  "type": "n8n-nodes-base.executeWorkflow",
+  "name": "Config",
+  "type": "n8n-nodes-base.set",
   "parameters": {
-    // Data from previous nodes automatically passes through
+    "assignments": {
+      "assignments": [
+        {
+          "name": "runId",
+          "value": "={{ $('When Called By Another Workflow').first().json.run_id || 'test_run' }}"
+        },
+        {
+          "name": "brandId",
+          "value": "={{ $('When Called By Another Workflow').first().json.brand_id || 'test-brand' }}"
+        },
+        {
+          "name": "brandName",
+          "value": "={{ $('When Called By Another Workflow').first().json.brand_name || 'Test Brand' }}"
+        },
+        {
+          "name": "topic",
+          "value": "={{ $('When Called By Another Workflow').first().json.topic || 'default topic' }}"
+        },
+        {
+          "name": "aiEngine",
+          "value": "={{ $('When Called By Another Workflow').first().json.ai_engine || 'perplexity' }}"
+        }
+      ]
+    }
   }
 }
-
-// In child workflow - access via trigger using .first()
-const data = $('When Called By Another Workflow').first().json;
-const brandId = data.brandId;
-const brandName = data.brandName;
 ```
+
+**Why this pattern is superior:**
+- Default values (`|| 'test_run'`) allow testing with Manual Trigger without errors
+- Config node centralizes all input extraction in one place
+- Rest of workflow references Config using `.first()`, not the trigger directly
+- Clear contract between parent and child workflows
 
 ## Data Referencing Best Practices
 
@@ -1131,7 +1218,9 @@ For items that permanently fail after all retries:
 - Team collaboration (separate ownership)
 - Testing individual components
 
-### Calling Sub-Workflows
+### Calling Sub-Workflows (Modern Pattern)
+
+**Use Execute Workflow node with defined input parameters:**
 
 ```json
 {
@@ -1143,8 +1232,13 @@ For items that permanently fail after all retries:
     "workflowId": {
       "__rl": true,
       "mode": "list",
-      "value": "",
+      "value": "workflow-id",
       "cachedResultName": "User Data Processor"
+    },
+    "inputData": {
+      "user_id": "={{ $json.user_id }}",
+      "data_type": "={{ $json.data_type }}",
+      "options": "={{ $json.options }}"
     },
     "options": {
       "waitForCompletion": true
@@ -1153,26 +1247,76 @@ For items that permanently fail after all retries:
 }
 ```
 
-### Sub-Workflow Pattern
+### Sub-Workflow Pattern with Defined Parameters
+
+**CRITICAL: Always define input parameters in the Execute Workflow Trigger:**
 
 ```json
 {
-  "name": "Sub-Workflow Name",
+  "name": "User Data Processor",
   "nodes": [
     {
       "name": "When Called By Another Workflow",
-      "type": "n8n-nodes-base.executeWorkflowTrigger"
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "triggerMode": "manual",
+        "inputDataMode": "define",
+        "inputDataFields": {
+          "values": [
+            {
+              "fieldName": "user_id",
+              "fieldType": "string",
+              "required": true
+            },
+            {
+              "fieldName": "data_type",
+              "fieldType": "string",
+              "required": true
+            },
+            {
+              "fieldName": "options",
+              "fieldType": "object",
+              "required": false
+            }
+          ]
+        }
+      }
     },
     {
       "name": "Config",
-      "type": "n8n-nodes-base.set"
+      "type": "n8n-nodes-base.set",
+      "position": [450, 300],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "userId",
+              "value": "={{ $('When Called By Another Workflow').first().json.user_id || 'test-user' }}"
+            },
+            {
+              "name": "dataType",
+              "value": "={{ $('When Called By Another Workflow').first().json.data_type || 'default' }}"
+            }
+          ]
+        }
+      }
     },
     {
-      "name": "Processing Logic"
+      "name": "Processing Logic",
+      "type": "n8n-nodes-base.code",
+      "position": [650, 300]
     }
   ]
 }
 ```
+
+**Benefits:**
+- Parameters defined in trigger auto-populate in calling workflow
+- Default values in Config enable testing with Manual Trigger
+- Clear contract between workflows
+- Type validation at design time
 
 ## Robust Subworkflow Error Reporting
 
@@ -1219,7 +1363,25 @@ Every subworkflow should return this structure:
       "name": "When Called By Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [250, 300],
+      "parameters": {
+        "triggerMode": "manual",
+        "inputDataMode": "define",
+        "inputDataFields": {
+          "values": [
+            {
+              "fieldName": "brandId",
+              "fieldType": "string",
+              "required": true
+            },
+            {
+              "fieldName": "brandName",
+              "fieldType": "string",
+              "required": true
+            }
+          ]
+        }
+      }
     },
     {
       "name": "Config",
@@ -1235,11 +1397,11 @@ Every subworkflow should return this structure:
             },
             {
               "name": "brandId",
-              "value": "={{ $('When Called By Another Workflow').item.json.brandId }}"
+              "value": "={{ $('When Called By Another Workflow').first().json.brandId || 'test-brand-id' }}"
             },
             {
               "name": "brandName",
-              "value": "={{ $('When Called By Another Workflow').item.json.brandName }}"
+              "value": "={{ $('When Called By Another Workflow').first().json.brandName || 'Test Brand' }}"
             }
           ]
         }
@@ -1693,7 +1855,26 @@ Include helpful debugging information in error responses:
     {
       "name": "When Called By Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "position": [250, 300]
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "triggerMode": "manual",
+        "inputDataMode": "define",
+        "inputDataFields": {
+          "values": [
+            {
+              "fieldName": "brandId",
+              "fieldType": "string",
+              "required": true
+            },
+            {
+              "fieldName": "brandName",
+              "fieldType": "string",
+              "required": true
+            }
+          ]
+        }
+      }
     },
     {
       "name": "Config",
@@ -1704,7 +1885,11 @@ Include helpful debugging information in error responses:
           "assignments": [
             {
               "name": "brandId",
-              "value": "test-brand-123"
+              "value": "={{ $('When Called By Another Workflow').first().json.brandId || 'test-brand-123' }}"
+            },
+            {
+              "name": "brandName",
+              "value": "={{ $('When Called By Another Workflow').first().json.brandName || 'Test Brand' }}"
             }
           ]
         }
@@ -1722,7 +1907,11 @@ Include helpful debugging information in error responses:
 }
 ```
 
-This allows testing the subworkflow independently with sample data.
+**How this pattern works:**
+- When called from parent workflow: Config extracts real parameters from trigger
+- When tested with Manual Trigger: Config uses default values (e.g., `'test-brand-123'`)
+- No errors during testing because defaults are provided via `||` operator
+- Same Config node works for both execution paths
 
 ## Loop Patterns
 
