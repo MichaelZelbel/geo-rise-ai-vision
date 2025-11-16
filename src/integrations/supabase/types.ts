@@ -507,6 +507,16 @@ export type Database = {
       }
     }
     Views: {
+      ai_engine_weights_latest: {
+        Row: {
+          created_at: string | null
+          engine_key: string | null
+          engine_query: string | null
+          trend_value: number | null
+          weight: number | null
+        }
+        Relationships: []
+      }
       analysis_run_summary: {
         Row: {
           actual_mentions_count: number | null
