@@ -118,7 +118,6 @@ const Dashboard = () => {
     // Handle status changes
     const handleAnalysisStatusChange = (status: string, runData?: any) => {
       if (status === 'completed') {
-        // Toast removed per user request
         loadDashboardData(user.id);
         setRunningAnalysisId(null);
         
@@ -134,7 +133,6 @@ const Dashboard = () => {
         toast.error('Analysis failed. Please try again.');
         setRunningAnalysisId(null);
       }
-      // 'processing' toast removed per user request
     };
       
     return () => {
@@ -311,6 +309,7 @@ const Dashboard = () => {
                 lastRunDate={lastAnalysisRun?.date}
                 lastRunScore={lastAnalysisRun?.score}
                 lastRunMentions={lastAnalysisRun?.mentions}
+                runningAnalysisId={runningAnalysisId}
               />
             </div>
 

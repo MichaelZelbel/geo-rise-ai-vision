@@ -14,9 +14,10 @@ interface AnalysisStatusCardProps {
   lastRunDate?: string;
   lastRunScore?: number;
   lastRunMentions?: number;
+  runningAnalysisId?: string | null;
 }
 
-const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions }: AnalysisStatusCardProps) => {
+const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, runningAnalysisId }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -43,6 +44,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
               userId={userId}
               onAnalysisStarted={onAnalysisStarted}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 w-full"
+              isAnalysisRunning={!!runningAnalysisId}
             />
           )}
         </div>
@@ -97,6 +99,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
                   onAnalysisStarted={onAnalysisStarted}
                   variant="outline"
                   className="w-full"
+                  isAnalysisRunning={!!runningAnalysisId}
                 />
               )}
             </div>
