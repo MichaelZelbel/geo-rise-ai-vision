@@ -14,6 +14,7 @@ interface RunAnalysisButtonProps {
   variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
+  isAnalysisRunning?: boolean;
 }
 
 /**
@@ -47,8 +48,11 @@ export function RunAnalysisButton({
   variant = 'default',
   size = 'default',
   className,
+  isAnalysisRunning = false,
 }: RunAnalysisButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
+  
+  const isRunning = isAnalysisRunning || isLoading;
 
   const handleRunAnalysis = async () => {
     setIsLoading(true);
@@ -88,15 +92,15 @@ export function RunAnalysisButton({
     <div className="flex flex-col gap-2">
       <Button
         onClick={handleRunAnalysis}
-        disabled={disabled || isLoading}
+        disabled={disabled || isRunning}
         variant={variant}
         size={size}
         className={className}
       >
-        {isLoading ? (
+        {isRunning ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Starting Analysis...
+            Running Analysis...
           </>
         ) : (
           <>
@@ -105,7 +109,7 @@ export function RunAnalysisButton({
           </>
         )}
       </Button>
-      {isLoading && (
+      {isRunning && (
         <p className="text-sm text-muted-foreground text-center">
           10-minute coffee break for you! ☕<br />
           You can safely close this page – we've got this!
