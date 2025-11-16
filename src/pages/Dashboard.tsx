@@ -306,6 +306,7 @@ const Dashboard = () => {
                 brandId={brand.id}
                 brandName={brand.name}
                 topic={brand.topic}
+                userId={user?.id}
                 onAnalysisStarted={(runId) => setRunningAnalysisId(runId)}
                 lastRunDate={lastAnalysisRun?.date}
                 lastRunScore={lastAnalysisRun?.score}
