@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_engine_weights: {
+        Row: {
+          created_at: string
+          engine_key: string
+          engine_query: string
+          id: string
+          trend_value: number
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          engine_key: string
+          engine_query: string
+          id?: string
+          trend_value: number
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          engine_key?: string
+          engine_query?: string
+          id?: string
+          trend_value?: number
+          weight?: number
+        }
+        Relationships: []
+      }
       analyses: {
         Row: {
           ai_engine: string
