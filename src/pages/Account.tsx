@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Header from "@/components/Header";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Building2, CreditCard, Settings, AlertTriangle } from "lucide-react";
 import ProfileSection from "@/components/account/ProfileSection";
@@ -42,8 +42,8 @@ export default function Account() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
+      <div className="min-h-screen bg-background pt-20">
+        <DashboardHeader userEmail={user?.email} userPlan={profile?.plan} />
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-muted rounded w-1/4 mb-8"></div>
@@ -55,8 +55,8 @@ export default function Account() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="min-h-screen bg-background pt-20">
+      <DashboardHeader userEmail={user.email} userPlan={profile?.plan} />
       
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
@@ -86,7 +86,7 @@ export default function Account() {
           </TabsList>
 
           <TabsContent value="profile">
-            <ProfileSection user={user} profile={profile} onUpdate={checkAuth} />
+            <ProfileSection user={user} />
           </TabsContent>
 
           <TabsContent value="brands">

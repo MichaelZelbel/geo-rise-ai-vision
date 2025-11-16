@@ -13,6 +13,7 @@ import QuickWinsCard from "@/components/dashboard/QuickWinsCard";
 import TopMentionsCard from "@/components/dashboard/TopMentionsCard";
 import EmptyState from "@/components/dashboard/EmptyState";
 import ChatCoach from "@/components/dashboard/ChatCoach";
+import RecentActivity from "@/components/profile/RecentActivity";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WizardModal } from "@/components/wizard/WizardModal";
 
@@ -117,7 +118,7 @@ const Dashboard = () => {
     // Handle status changes
     const handleAnalysisStatusChange = (status: string, runData?: any) => {
       if (status === 'completed') {
-        toast.success('Analysis completed! Refreshing dashboard...');
+        // Toast removed per user request
         loadDashboardData(user.id);
         setRunningAnalysisId(null);
         
@@ -132,9 +133,8 @@ const Dashboard = () => {
       } else if (status === 'failed') {
         toast.error('Analysis failed. Please try again.');
         setRunningAnalysisId(null);
-      } else if (status === 'processing') {
-        toast.info('Analysis in progress...', { id: 'processing' });
       }
+      // 'processing' toast removed per user request
     };
       
     return () => {
@@ -323,6 +323,9 @@ const Dashboard = () => {
 
             {/* Third Row - Top Mentions */}
             <TopMentionsCard isPro={isPro} />
+
+            {/* Fourth Row - Recent Activity */}
+            {user && <RecentActivity userId={user.id} />}
           </div>
         )}
         
