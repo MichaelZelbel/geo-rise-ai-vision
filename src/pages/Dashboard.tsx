@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import VisibilityScoreCard from "@/components/dashboard/VisibilityScoreCard";
@@ -39,13 +40,33 @@ const Dashboard = () => {
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [runningAnalysisId, setRunningAnalysisId] = useState<string | null>(null);
-  const [lastAnalysisRun, setLastAnalysisRun] = useState<{
-    date: string;
-    score: number;
-    mentions: number;
-  } | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // React Query for latest analysis run
+  const { data: lastAnalysisRun } = useQuery({
+    queryKey: ["latest-analysis-run", brand?.id],
+    queryFn: async () => {
+      if (!brand?.id) return null;
+      
+      const { data: latestRun } = await supabase
+        .from("analysis_runs")
+        .select("*")
+        .eq("brand_id", brand.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      return latestRun ? {
+        date: latestRun.created_at,
+        score: latestRun.visibility_score || 0,
+        mentions: latestRun.total_mentions || 0,
+      } : null;
+    },
+    enabled: !!brand?.id,
+    refetchInterval: runningAnalysisId ? 5000 : false, // Poll while analysis is running
+  });
 
   const topicParam = searchParams.get("topic");
   const brandParam = searchParams.get("brand");
@@ -111,24 +132,16 @@ const Dashboard = () => {
       
       if (run) {
         console.log('Polled status:', run.status);
-        handleAnalysisStatusChange(run.status, run);
+        handleAnalysisStatusChange(run.status);
       }
     }, 5000);
 
     // Handle status changes
-    const handleAnalysisStatusChange = (status: string, runData?: any) => {
+    const handleAnalysisStatusChange = (status: string) => {
       if (status === 'completed') {
+        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand?.id] });
         loadDashboardData(user.id);
         setRunningAnalysisId(null);
-        
-        // Update last analysis run immediately if we have the data
-        if (runData) {
-          setLastAnalysisRun({
-            date: runData.created_at,
-            score: runData.visibility_score || 0,
-            mentions: runData.total_mentions || 0,
-          });
-        }
       } else if (status === 'failed') {
         toast.error('Analysis failed. Please try again.');
         setRunningAnalysisId(null);
@@ -230,22 +243,8 @@ const Dashboard = () => {
         setMentionedEngines(engines);
         setHasAnalysis(analysesData && analysesData.length > 0);
 
-        // Fetch latest analysis run for status card
-        const { data: latestRun } = await supabase
-          .from("analysis_runs")
-          .select("*")
-          .eq("brand_id", brandData.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (latestRun) {
-          setLastAnalysisRun({
-            date: latestRun.created_at,
-            score: latestRun.visibility_score || 0,
-            mentions: latestRun.total_mentions || 0,
-          });
-        }
+        // Invalidate query to trigger refetch
+        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brandData.id] });
       }
 
       setLoading(false);
