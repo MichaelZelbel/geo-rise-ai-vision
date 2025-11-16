@@ -1,0 +1,301 @@
+{
+  "name": "Fetch Engine Weights",
+  "nodes": [
+    {
+      "parameters": {
+        "functionCode": "return [\n  {\n    json: {\n      engineId: 'chatgpt',\n      label: 'ChatGPT',\n      query: 'chatgpt'\n    }\n  },\n  {\n    json: {\n      engineId: 'claude',\n      label: 'Claude',\n      query: 'claude ai'\n    }\n  },\n  {\n    json: {\n      engineId: 'perplexity',\n      label: 'Perplexity',\n      query: 'perplexity ai'\n    }\n  }\n];"
+      },
+      "id": "4711f44e-0d61-4508-984b-ac7e6bb4845a",
+      "name": "Seed Engines",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "google_trends",
+        "q": "={{ $json[\"query\"] }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "id": "6fff9be8-0836-45f0-a17b-e0d567901b0c",
+      "name": "SerpApi - Google Trends",
+      "type": "n8n-nodes-serpapi.serpApi",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -16
+      ],
+      "credentials": {
+        "serpApi": {
+          "id": "sYjdI8n48FPKlHPw",
+          "name": "SerpApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Input: all items from the SerpAPI node (one per engine)\n// Output: one item with { engines: [...], totalTrendValue }\n\nconst items = $input.all();\n\nconst engines = [];\n\n// 1) Extract a numeric trend value + query per engine\nfor (const item of items) {\n  const params = item.json.search_parameters || {};\n  const q = params.q || 'unknown';  // e.g. \"chatgpt\", \"claude ai\", \"perplexity ai\"\n\n  // Create a simple engine key from the query, e.g. \"chatgpt\", \"claude_ai\"\n  const engineKey = q.toLowerCase().replace(/\\s+/g, '_');\n\n  const interest = item.json.interest_over_time;\n  const timeline = interest && Array.isArray(interest.timeline_data)\n    ? interest.timeline_data\n    : [];\n\n  let trendValue = 0;\n\n  if (timeline.length > 0) {\n    const lastPoint = timeline[timeline.length - 1]; // latest time bucket\n    if (Array.isArray(lastPoint.values) && lastPoint.values.length > 0) {\n      const vObj = lastPoint.values[0];\n\n      if (typeof vObj.extracted_value === 'number') {\n        trendValue = vObj.extracted_value;\n      } else if (typeof vObj.value === 'number') {\n        trendValue = vObj.value;\n      } else if (typeof vObj.value === 'string') {\n        const parsed = parseFloat(vObj.value);\n        if (!isNaN(parsed)) trendValue = parsed;\n      }\n    }\n  }\n\n  // Tiny epsilon so an engine never completely disappears\n  if (!trendValue || trendValue <= 0) {\n    trendValue = 0.01;\n  }\n\n  engines.push({\n    engineKey,      // e.g. \"chatgpt\"\n    query: q,       // e.g. \"chatgpt\"\n    trendValue      // e.g. 51\n  });\n}\n\n// 2) Normalize to weights\nconst totalTrendValue = engines.reduce((sum, e) => sum + e.trendValue, 0) || 1;\n\nfor (const e of engines) {\n  e.weight = e.trendValue / totalTrendValue;\n}\n\n// 3) Return a single summary item\nreturn [\n  {\n    json: {\n      engines,\n      totalTrendValue\n    }\n  }\n];\n"
+      },
+      "id": "b760ae36-64a5-402d-8c9a-56068004ecfb",
+      "name": "Compute Weights",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "engines",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "31a42fbb-6380-483d-b2ee-9754a5858a09",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "tableId": "ai_engine_weights",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "engine_key",
+              "fieldValue": "={{ $json.engineKey }}"
+            },
+            {
+              "fieldId": "engine_query",
+              "fieldValue": "={{ $json.query }}"
+            },
+            {
+              "fieldId": "trend_value",
+              "fieldValue": "={{ $json.trendValue }}"
+            },
+            {
+              "fieldId": "weight",
+              "fieldValue": "={{ $json.weight }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        -16
+      ],
+      "id": "0d0b0117-47a3-4eca-8ea1-752d440cb180",
+      "name": "Create a row",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77711223-45be-4379-972e-b1d5b5066406",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Failed to create analysis run record in database\",\n    \"code\": \"DATABASE_ERROR\",\n    \"node\": \"Create Run Record\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": true,\n    \"details\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
+              "name": "=metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1328,
+        80
+      ],
+      "id": "efdbb2c4-edb0-4bf0-b13a-3c12fe244d84",
+      "name": "Set Database Error Response"
+    },
+    {
+      "parameters": {
+        "sendTo": "michael@zelbel.de",
+        "subject": "=Error in Fetch Engine Weights",
+        "emailType": "text",
+        "message": "=Create a nicer error message boddy later",
+        "options": {}
+      },
+      "id": "cc729cf4-f0a4-498f-ba9f-438e79fd8926",
+      "name": "Send Error Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1552,
+        80
+      ],
+      "webhookId": "engine-trends-error-webhook",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5orzzYCOIwoyw44",
+          "name": "Gmail account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "id": "da8140f5-967e-4dea-8b55-9b687ffaf1bc",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        -80
+      ],
+      "id": "a6fd82a1-b366-4799-8c76-097ab5fd8c12",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Seed Engines": {
+      "main": [
+        [
+          {
+            "node": "SerpApi - Google Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpApi - Google Trends": {
+      "main": [
+        [
+          {
+            "node": "Compute Weights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Weights": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Set Database Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Database Error Response": {
+      "main": [
+        [
+          {
+            "node": "Send Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Seed Engines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Seed Engines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8e2b7af3-da32-448f-ba20-8cde202dfa06",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
+  },
+  "id": "mrtZKU43etORiSaP",
+  "tags": []
+}

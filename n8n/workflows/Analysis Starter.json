@@ -3,13 +3,13 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "267c9e28-747f-43b9-aec0-1022a04974c3",
+      "id": "5326d3d7-a70d-4b33-9eb1-99955507e64e",
       "name": "Manual Trigger for Testing",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -624,
-        -64
+        -1984,
+        64
       ],
       "retryOnFail": true,
       "maxTries": 2,
@@ -22,13 +22,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "8ef9be51-fee9-4744-ad6f-aca0c23d3328",
+      "id": "e197a836-42fd-4cf0-888e-3be5019cdc49",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -624,
-        -240
+        -1984,
+        -112
       ],
       "webhookId": "georise-analysis-start",
       "retryOnFail": true,
@@ -67,7 +67,7 @@
               "id": "config-run-id",
               "name": "runId",
               "type": "string",
-              "value": "={{ 'run_' + Date.now() + '_' + ($json.body ? $json.body.brandId : 'test') }}"
+              "value": "={{ 'run_' + Date.now() + '_' + ($json.body ? $json.body.brandId : 'test2') }}"
             },
             {
               "id": "config-timestamp",
@@ -79,13 +79,13 @@
         },
         "options": {}
       },
-      "id": "8a5a2ddc-22a9-41ab-95b7-cf7151fbae8a",
+      "id": "fcffe87a-8d97-4adc-b69a-38f7902fbc43",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -400,
-        -240
+        -1760,
+        -112
       ]
     },
     {
@@ -115,18 +115,18 @@
             },
             {
               "fieldId": "user_id",
-              "fieldValue": "={{ $json.userId }}"
+              "fieldValue": "={{ $('Config').item.json.userId }}"
             }
           ]
         }
       },
-      "id": "8e8bac60-1564-4cb3-9b59-6229664b5ad1",
+      "id": "c4396ff4-64e3-4eef-b90e-afd054ae58d8",
       "name": "Create Run Record",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        48,
-        -256
+        -1104,
+        -128
       ],
       "alwaysOutputData": false,
       "retryOnFail": true,
@@ -145,13 +145,13 @@
         "responseBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
-      "id": "6cf3f73c-ca48-4f3f-8319-7228dc08ad62",
+      "id": "6b05507e-15f7-4ca2-bdfa-350bf1d38b15",
       "name": "Respond Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1632,
-        -272
+        1360,
+        -112
       ]
     },
     {
@@ -212,10 +212,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -192,
-        -240
+        -1552,
+        -112
       ],
-      "id": "f1697534-7c8e-4bdf-b1d9-4b301edb384d",
+      "id": "6bf0ab19-e903-47ae-b52a-be0e636d82f0",
       "name": "Validate Inputs"
     },
     {
@@ -247,10 +247,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        320,
-        304
+        -624,
+        448
       ],
-      "id": "7ee2bb1b-aeff-4f89-835b-4e16fc4e462d",
+      "id": "79bd2757-8834-4695-915a-26e59de6faa7",
       "name": "Set Validation Error Response"
     },
     {
@@ -282,10 +282,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        320,
-        96
+        128,
+        512
       ],
-      "id": "22fbd9b4-0a9a-4fa7-a39f-972f5bee109c",
+      "id": "7120301d-a580-450a-9693-711183d64e9c",
       "name": "Set Database Error Response"
     },
     {
@@ -301,19 +301,19 @@
             {
               "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
               "name": "data",
-              "value": "={{\n  {\n    runId: $('Config').item.json.runId,\n    message: $json.success \n      ? 'Analysis completed successfully across all engines.' \n      : 'Analysis completed with partial success.',\n    brandId: $('Config').item.json.brandId,\n    brandName: $('Config').item.json.brandName,\n    weightedVisibilityScore: $json.summary.weightedVisibilityScore,\n    processors: $json.summary,\n    results: {\n      perplexity: $json.data.perplexity,\n      chatgpt: $json.data.chatgpt,\n      claude: $json.data.claude\n    },\n    errors: $json.partialSuccess ? $json.errors : null\n  }\n}}",
+              "value": "={{\n  {\n    runId: $('Config').first().json.runId,\n    message: $('Combine Results').first().json.success \n      ? 'Analysis completed successfully across all engines.' \n      : 'Analysis completed with partial success.',\n    brandId: $('Config').first().json.brandId,\n    brandName: $('Config').first().json.brandName,\n    weightedVisibilityScore: $('Combine Results').item.json.summary.weightedVisibilityScore,\n    processors: $('Combine Results').item.json.summary,\n    results: {\n      perplexity: $('Combine Results').item.json.data.perplexity,\n      chatgpt: $('Combine Results').item.json.data.chatgpt,\n      claude: $('Combine Results').item.json.data.claude\n    },\n    errors: $('Combine Results').item.json.partialSuccess ? $('Combine Results').item.json.errors : null\n  }\n}}",
               "type": "object"
             },
             {
               "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
               "name": "metadata",
-              "value": "={{ {\n  executionId: $execution.id,\n  workflowName: $workflow.name,\n  processors: $json.metadata\n} }}",
+              "value": "={{ {\n  executionId: $execution.id,\n  workflowName: $workflow.name,\n  processors: $('Combine Results').item.json.metadata\n} }}",
               "type": "object"
             },
             {
               "id": "d51c0918-abcb-40b9-9a40-63a269af806c",
               "name": "partialSuccess",
-              "value": "={{ $json.partialSuccess }}",
+              "value": "={{ $('Combine Results').item.json.partialSuccess }}",
               "type": "boolean"
             }
           ]
@@ -323,10 +323,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1472,
-        -400
+        1168,
+        -432
       ],
-      "id": "eac63a48-9ba3-4c92-85dc-945380b65a15",
+      "id": "b4c2bf2d-e4dd-4244-a8ac-370e3ffba90a",
       "name": "Set Success Response"
     },
     {
@@ -342,19 +342,19 @@
             {
               "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
               "name": "error",
-              "value": "={{\n  {\n    message: 'Analysis workflows failed',\n    code: $json.success === false && $json.partialSuccess === false ? 'ALL_PROCESSORS_FAILED' : 'PARTIAL_PROCESSOR_FAILURE',\n    timestamp: $now.toISO(),\n    isRetryable: true,\n    errors: {\n      perplexity: $json.errors.perplexity,\n      chatgpt: $json.errors.chatgpt\n    },\n    summary: $json.summary\n  }\n}}",
+              "value": "={{\n  {\n    message: 'Analysis workflows failed',\n    code: $('Combine Results').item.json.success === false && $('Combine Results').item.json.partialSuccess === false ? 'ALL_PROCESSORS_FAILED' : 'PARTIAL_PROCESSOR_FAILURE',\n    timestamp: $now.toISO(),\n    isRetryable: true,\n    errors: {\n      perplexity: $('Combine Results').item.json.errors.perplexity,\n      chatgpt: $('Combine Results').item.json.errors.chatgpt\n    },\n    summary: $('Combine Results').item.json.summary\n  }\n}}",
               "type": "object"
             },
             {
               "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
               "name": "metadata",
-              "value": "={{\n  {\n    executionId: $execution.id,\n    workflowName: $workflow.name,\n    processors: $json.metadata\n  }\n}}",
+              "value": "={{\n  {\n    executionId: $execution.id,\n    workflowName: $workflow.name,\n    processors: $('Combine Results').item.json.metadata\n  }\n}}",
               "type": "object"
             },
             {
               "id": "1c074f7f-1496-40f6-9517-0264f19d964a",
               "name": "=data",
-              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"subworkflowMetadata\": $json.metadata\n  }\n}}",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"subworkflowMetadata\": $('Combine Results').item.json.metadata\n  }\n}}",
               "type": "object"
             }
           ]
@@ -364,10 +364,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1472,
-        -128
+        1200,
+        192
       ],
-      "id": "b77b750f-8a93-4c85-a585-b2de77772ebf",
+      "id": "8aeadae7-f49e-4f25-ba55-57f1960a50d2",
       "name": "Set Subworkflow Error Response"
     },
     {
@@ -453,13 +453,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "5bbc0841-0890-4c61-8993-fc4d31de0adc",
+      "id": "4790c19f-4f9f-48b4-8931-50b61b9a15fd",
       "name": "Process ChatGPT",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        320,
-        -448
+        -624,
+        -304
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -474,23 +474,23 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        576,
-        -288
+        -368,
+        -144
       ],
-      "id": "dd557cdd-e010-4df7-a562-14f4a7e86787",
+      "id": "f649e678-299e-43ab-9051-96f00f284353",
       "name": "Merge Processor Results"
     },
     {
       "parameters": {
-        "jsCode": "// Get results from both processors\nconst allResults = $input.all();\n\nconst perplexityResult = allResults[0]?.json || {};\nconst chatgptResult = allResults[1]?.json || {};\nconst claudeResult = allResults[2]?.json || {};\n\nconst perplexitySuccess = perplexityResult.success === true;\nconst chatgptSuccess = chatgptResult.success === true;\nconst claudeSuccess = claudeResult.success === true;\n\n// Determine overall status\nconst bothSucceeded = perplexitySuccess && chatgptSuccess && claudeSuccess;\nconst partialSuccess = perplexitySuccess || chatgptSuccess || claudeSuccess;\nconst allFailed = !perplexitySuccess && !chatgptSuccess && !claudeSuccess;\n\n// Extract visibility scores from successful processors\nconst scores = [];\nconst weights = [];\n\nif (perplexitySuccess && perplexityResult.data?.visibilityScore != null) {\n  scores.push(perplexityResult.data.visibilityScore);\n  weights.push(1); // perplexity weight = 1\n}\nif (chatgptSuccess && chatgptResult.data?.visibilityScore != null) {\n  scores.push(chatgptResult.data.visibilityScore);\n  weights.push(3); // chatgpt weight = 3\n}\nif (claudeSuccess && claudeResult.data?.visibilityScore != null) {\n  scores.push(claudeResult.data.visibilityScore);\n  weights.push(2); // claude weight = 2\n}\n\n// Calculate weighted average\nlet weightedScore = null;\nif (scores.length > 0) {\n  const totalWeight = weights.reduce((sum, w) => sum + w, 0);\n  const weightedSum = scores.reduce((sum, score, i) => sum + (score * weights[i]), 0);\n  weightedScore = Math.round((weightedSum / totalWeight) * 100) / 100;\n}\n\n// Combine data from successful processors\nconst combinedData = {\n  perplexity: perplexitySuccess ? perplexityResult.data : null,\n  chatgpt: chatgptSuccess ? chatgptResult.data : null,\n  claude: claudeSuccess ? claudeResult.data : null,\n  weightedScore: weightedScore,\n  scoresUsed: scores.length\n};\n\n// Combine errors from failed processors\nconst combinedErrors = {\n  perplexity: !perplexitySuccess ? perplexityResult.error : null,\n  chatgpt: !chatgptSuccess ? chatgptResult.error : null,\n  claude: !claudeSuccess ? claudeResult.error : null\n};\n\n// Return combined result\nreturn {\n  json: {\n    success: bothSucceeded,\n    partialSuccess: partialSuccess && !bothSucceeded,\n    data: combinedData,\n    errors: combinedErrors,\n    weightedVisibilityScore: weightedScore,\n    summary: {\n      perplexityStatus: perplexitySuccess ? 'completed' : 'failed',\n      chatgptStatus: chatgptSuccess ? 'completed' : 'failed',\n      claudeStatus: claudeSuccess ? 'completed' : 'failed',\n      totalProcessors: 3,\n      successfulProcessors: scores.length\n    },\n    metadata: {\n      perplexity: perplexityResult.metadata,\n      chatgpt: chatgptResult.metadata,\n      claude: claudeResult.metadata\n    }\n  }\n};"
+        "jsCode": "// === 1) Get processor results explicitly from `Merge Processor Results` ===\n// We expect 3 items from that node: [perplexity, chatgpt, claude] in order.\nconst processorItems = $items('Merge Processor Results', 0, 0);\nconst perplexityResult = processorItems[0]?.json || {};\nconst chatgptResult    = processorItems[1]?.json || {};\nconst claudeResult     = processorItems[2]?.json || {};\n\nconst perplexitySuccess = perplexityResult.success === true;\nconst chatgptSuccess    = chatgptResult.success === true;\nconst claudeSuccess     = claudeResult.success === true;\n\nconst allSucceeded   = perplexitySuccess && chatgptSuccess && claudeSuccess;\nconst partialSuccess = (perplexitySuccess || chatgptSuccess || claudeSuccess) && !allSucceeded;\n\n// === 2) Get engine weights from `Collapse Weights` ===\n// That node outputs ONE item with { engines: [...] }\nconst collapseItem = $items('Collapse Weights', 0, 0)[0];\nconst weightRows = Array.isArray(collapseItem?.json?.engines)\n  ? collapseItem.json.engines\n  : [];\n\nconst weightMap = {};\nfor (const row of weightRows) {\n  if (!row.engine_key) continue;\n  const key = String(row.engine_key).toLowerCase(); // 'chatgpt', 'claude', 'perplexity'\n  const w = Number(row.weight);\n  if (!isNaN(w)) {\n    weightMap[key] = w;\n  }\n}\n\n// Fallbacks if Supabase/weights are missing\nconst fallbackWeights = {\n  perplexity: 1,\n  chatgpt:    3,\n  claude:     2,\n};\n\nfunction getWeight(engineKey) {\n  const key = engineKey.toLowerCase();\n  if (weightMap[key] != null) return weightMap[key];\n  return fallbackWeights[key] ?? 1;\n}\n\n// === 3) Collect scores from successful engines & apply weights ===\nconst scores  = [];\nconst weights = [];\n\nif (perplexitySuccess && perplexityResult.data?.visibilityScore != null) {\n  scores.push(perplexityResult.data.visibilityScore);\n  weights.push(getWeight('perplexity'));\n}\nif (chatgptSuccess && chatgptResult.data?.visibilityScore != null) {\n  scores.push(chatgptResult.data.visibilityScore);\n  weights.push(getWeight('chatgpt'));\n}\nif (claudeSuccess && claudeResult.data?.visibilityScore != null) {\n  scores.push(claudeResult.data.visibilityScore);\n  weights.push(getWeight('claude'));\n}\n\n// === 4) Calculate weighted average visibility score ===\nlet weightedScore = null;\nif (scores.length > 0) {\n  const totalWeight = weights.reduce((sum, w) => sum + w, 0);\n  const weightedSum = scores.reduce((sum, score, i) => sum + (score * weights[i]), 0);\n  weightedScore = Math.round((weightedSum / totalWeight) * 100) / 100;\n}\n\n// === 5) Build combined data/errors ===\nconst combinedData = {\n  perplexity: perplexitySuccess ? perplexityResult.data : null,\n  chatgpt:    chatgptSuccess    ? chatgptResult.data    : null,\n  claude:     claudeSuccess     ? claudeResult.data     : null,\n  weightedScore: weightedScore,\n  scoresUsed: scores.length,\n  engineWeightsUsed: weightMap,  // nice to debug\n};\n\nconst combinedErrors = {\n  perplexity: !perplexitySuccess ? perplexityResult.error : null,\n  chatgpt:    !chatgptSuccess    ? chatgptResult.error    : null,\n  claude:     !claudeSuccess     ? claudeResult.error     : null,\n};\n\n// === 6) Final JSON output ===\nreturn {\n  json: {\n    success: allSucceeded,\n    partialSuccess,\n    data: combinedData,\n    errors: combinedErrors,\n    weightedVisibilityScore: weightedScore,\n    summary: {\n      perplexityStatus: perplexitySuccess ? 'completed' : 'failed',\n      chatgptStatus:    chatgptSuccess    ? 'completed' : 'failed',\n      claudeStatus:     claudeSuccess     ? 'completed' : 'failed',\n      totalProcessors: 3,\n      successfulProcessors: scores.length,\n    },\n    metadata: {\n      perplexity: perplexityResult.metadata,\n      chatgpt:    chatgptResult.metadata,\n      claude:     claudeResult.metadata,\n    },\n  },\n};\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        -272
+        352,
+        -144
       ],
-      "id": "0ee64627-be92-4d9d-aae8-df8624fcfc0e",
+      "id": "4c65db29-6484-437e-a352-8d88e8a6ce4f",
       "name": "Combine Results"
     },
     {
@@ -505,7 +505,7 @@
           "conditions": [
             {
               "id": "da9aa696-9e82-4ecf-a020-04f85731958e",
-              "leftValue": "={{ $json.success === true || $json.partialSuccess === true }}",
+              "leftValue": "={{ $('Combine Results').item.json.success === true || $('Combine Results').item.json.partialSuccess === true }}",
               "rightValue": 0,
               "operator": {
                 "type": "boolean",
@@ -519,13 +519,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "59055052-4c28-4296-bb25-05ad6b5375ca",
+      "id": "7fc081d7-cdca-4250-80b4-973bf6918711",
       "name": "Check Processor Success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1248,
-        -288
+        848,
+        -160
       ]
     },
     {
@@ -611,13 +611,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "07ecb868-6fe2-4a63-851e-2d1c3113ba7d",
+      "id": "fd5accd1-c79a-44a8-8aef-5747e653e719",
       "name": "Process Perplexity",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        320,
-        -272
+        -624,
+        -128
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -705,13 +705,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "ccaa56f2-bf14-414c-b5a4-67de34c27a0c",
+      "id": "63f9a148-a22b-4648-a43f-3c653c84fe76",
       "name": "Process Claude",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        320,
-        -96
+        -624,
+        48
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -725,7 +725,7 @@
             {
               "keyName": "run_id",
               "condition": "eq",
-              "keyValue": "=eq.{{ $('Config').item.json.runId }}"
+              "keyValue": "=eq.{{ $('Config').first().json.runId }}"
             }
           ]
         },
@@ -738,13 +738,13 @@
           ]
         }
       },
-      "id": "dc6b72a8-0161-450a-8202-855e19a29a6b",
+      "id": "f385db27-a6cd-40da-b892-7620cd18db0f",
       "name": "Update Combined Score",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1008,
-        -272
+        576,
+        -144
       ],
       "alwaysOutputData": true,
       "retryOnFail": true,
@@ -756,6 +756,45 @@
         }
       },
       "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ai_engine_weights_latest",
+        "returnAll": true,
+        "filterType": "string"
+      },
+      "id": "fe071ac7-a8cd-49af-883e-14de937896d5",
+      "name": "Get Engine Weights",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        -128
+      ],
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xSCCE5dL9poY7JFF",
+          "name": "Supabase Lovable Georise"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// flatten into one array\nconst engines = items.map(i => i.json);\n\n// return a single item\nreturn [\n  {\n    json: {\n      engines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        -144
+      ],
+      "id": "cec64b84-00ed-4a53-82bd-a771e396a76a",
+      "name": "Collapse Weights"
     }
   ],
   "pinData": {},
@@ -898,7 +937,7 @@
       "main": [
         [
           {
-            "node": "Combine Results",
+            "node": "Get Engine Weights",
             "type": "main",
             "index": 0
           }
@@ -973,6 +1012,35 @@
           }
         ]
       ]
+    },
+    "Get Engine Weights": {
+      "main": [
+        [
+          {
+            "node": "Collapse Weights",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collapse Weights": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -981,7 +1049,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "11dc8d0e-931f-4c46-9fde-6eded1591fb0",
+  "versionId": "3d64d4a3-098c-41fe-9938-cc024632556a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2347f3b8b1dfdc75f6e4d6c79bbcea28b8c181a984423783d1a0375c872f55c3"
