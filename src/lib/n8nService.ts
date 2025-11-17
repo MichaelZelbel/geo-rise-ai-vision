@@ -63,7 +63,7 @@ export async function triggerAnalysis(
   params: TriggerAnalysisParams
 ): Promise<string> {
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL ||
-                     'https://n8n-georise.agentpool.cloud/webhook/georise-analysis-start';
+                     'https://n8n-georise-v2.agentpool.cloud/webhook/analysis';
 
   try {
     const response = await fetch(webhookUrl, {
@@ -130,7 +130,7 @@ export async function triggerAnalysis(
  */
 export async function checkN8nHealth(): Promise<boolean> {
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL ||
-                     'https://n8n-georise.agentpool.cloud/webhook/georise-analysis-start';
+                     'https://n8n-georise-v2.agentpool.cloud/webhook/analysis';
 
   try {
     // Send OPTIONS request to check CORS and webhook availability
@@ -151,5 +151,5 @@ export async function checkN8nHealth(): Promise<boolean> {
  */
 export function getN8nWebhookUrl(): string {
   return import.meta.env.VITE_N8N_WEBHOOK_URL ||
-         'https://n8n-georise.agentpool.cloud/webhook/georise-analysis-start';
+         'https://n8n-georise-v2.agentpool.cloud/webhook/analysis';
 }
