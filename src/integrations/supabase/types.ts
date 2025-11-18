@@ -117,6 +117,7 @@ export type Database = {
           brand_name: string
           citation_count: number | null
           completed_at: string | null
+          completion_percentage: number | null
           created_at: string
           error_message: string | null
           id: string
@@ -142,6 +143,7 @@ export type Database = {
           brand_name: string
           citation_count?: number | null
           completed_at?: string | null
+          completion_percentage?: number | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -167,6 +169,7 @@ export type Database = {
           brand_name?: string
           citation_count?: number | null
           completed_at?: string | null
+          completion_percentage?: number | null
           created_at?: string
           error_message?: string | null
           id?: string
