@@ -1,0 +1,454 @@
+{
+  "name": "Analysis API",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b7b12811-3792-45e0-a97a-5262694b2016",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        192
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analysis",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3aa0643c-a938-4da9-9cbf-3e9c5408933d",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        16
+      ],
+      "webhookId": "georise-analysis-start",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandId : 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.brandName : 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.topic : 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.body ? $json.body.userId : '7f078493-f4de-491b-8156-6f7f8f425936' }}"
+            },
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ 'run_' + Date.now() + '_' + ($json.body ? $json.body.brandId : 'test2') }}"
+            },
+            {
+              "id": "config-timestamp",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a60b66c-8456-46d6-9a4f-092b61e52f68",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d3c26de2-ae2b-423d-a5e6-b731243b0878",
+              "leftValue": "={{ $('Config').item.json.userId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "8f1b43cc-785e-460a-8f15-df71bfef5e21",
+              "leftValue": "={{ $('Config').item.json.brandId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "99b5fb2c-0c89-42b9-89c3-7c9ce437beaf",
+              "leftValue": "={{ $('Config').item.json.brandName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "55b30658-d844-4748-82a7-e9d98b258bf0",
+              "leftValue": "={{ $('Config').item.json.topic }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        16
+      ],
+      "id": "e48a87c9-937c-4f38-ab50-1bc551d3b9dd",
+      "name": "Validate Inputs"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "q9lbAB025Xz3tf9f",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/q9lbAB025Xz3tf9f",
+          "cachedResultName": "Analysis Core"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "brandId": "={{ $('Config').first().json.brandId }}",
+            "brandName": "={{ $('Config').first().json.brandName }}",
+            "topic": "={{ $('Config').first().json.topic }}",
+            "userId": "={{ $('Config').first().json.userId }}",
+            "userPlan": "={{ $('Config').first().json.userPlan }}",
+            "runId": "={{ $('Config').first().json.runId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "brandId",
+              "displayName": "brandId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "brandName",
+              "displayName": "brandName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userId",
+              "displayName": "userId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userPlan",
+              "displayName": "userPlan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "runId",
+              "displayName": "runId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "name": "Call Analysis Core",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "980a87fc-abe5-4932-8edb-73407f2a10f7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "value": false
+            },
+            {
+              "name": "error",
+              "type": "object",
+              "value": {
+                "message": "Missing required parameters: brandName or topic",
+                "code": "VALIDATION_ERROR",
+                "node": "Validate Inputs",
+                "timestamp": "={{ $now.toISO() }}",
+                "isRetryable": false
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Validation Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        208
+      ],
+      "id": "a8b2350e-5517-4aca-aace-674071f7084a"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        128
+      ],
+      "id": "f4e87181-d642-4102-a1eb-63896f04f21c"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "value": true,
+              "id": "8805fa96-d7e2-4697-bf9c-95b71fa07103"
+            },
+            {
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $('Config').first().json.runId }}",
+              "id": "ca864508-c412-40a8-b0ff-18bcec73d9e9"
+            },
+            {
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $('Config').first().json.brandId }}",
+              "id": "99c2e510-6118-4487-96ed-407cbb3bb142"
+            },
+            {
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $('Config').first().json.brandName }}",
+              "id": "a4546e19-dd38-4806-8a80-79033c2cc154"
+            },
+            {
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $('Config').first().json.topic }}",
+              "id": "fa74bb17-9599-4b72-bf84-1cc1ddbce7a3"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Analysis run started",
+              "id": "9bacfb55-0e88-4231-9bde-46eba04d14ea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Success Response1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "id": "98fc704f-fea0-4086-8406-c2cbaeddbf37"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validate Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Inputs": {
+      "main": [
+        [
+          {
+            "node": "Call Analysis Core",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Analysis Core": {
+      "main": [
+        [
+          {
+            "node": "Set Success Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Validation Error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Success Response1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "32539cee-1439-4ab3-8093-5a17c90db98e",
+  "meta": {
+    "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
+  },
+  "id": "9J3LB6K0WYJSTuZy",
+  "tags": []
+}
