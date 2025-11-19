@@ -15,12 +15,11 @@ interface AnalysisStatusCardProps {
   lastRunDate?: string;
   lastRunScore?: number;
   lastRunMentions?: number;
-  runningAnalysisId?: string | null;
   completionPercentage?: number;
   analysisStatus?: string;
 }
 
-const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, runningAnalysisId, completionPercentage, analysisStatus }: AnalysisStatusCardProps) => {
+const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, completionPercentage, analysisStatus }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
   
   // Calculate display percentage: completion_percentage + 5, capped at 100
@@ -28,8 +27,8 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
     ? Math.min(completionPercentage + 5, 100) 
     : 5;
   
-  // Show progress bar only when analysis is running
-  const isAnalysisRunning = runningAnalysisId && (analysisStatus === 'pending' || analysisStatus === 'processing');
+  // Show progress bar when analysis is running (based purely on status)
+  const isAnalysisRunning = analysisStatus === 'pending' || analysisStatus === 'processing';
 
   return (
     <div className="bg-card rounded-xl p-6 border border-primary/20 shadow-sm">
@@ -56,7 +55,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
                 userId={userId}
                 onAnalysisStarted={onAnalysisStarted}
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 w-full"
-                isAnalysisRunning={!!runningAnalysisId}
+                isAnalysisRunning={isAnalysisRunning}
               />
               
               {isAnalysisRunning && (
@@ -123,7 +122,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
                     onAnalysisStarted={onAnalysisStarted}
                     variant="outline"
                     className="w-full"
-                    isAnalysisRunning={!!runningAnalysisId}
+                    isAnalysisRunning={isAnalysisRunning}
                   />
                   
                   {isAnalysisRunning && (

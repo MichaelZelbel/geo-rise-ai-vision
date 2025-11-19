@@ -39,41 +39,21 @@ const Dashboard = () => {
   const [mentionedEngines, setMentionedEngines] = useState<string[]>([]);
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
-  const [runningAnalysisId, setRunningAnalysisId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // React Query for latest analysis run
+  // React Query for latest analysis run - single source of truth, polls every 2 seconds
   const { data: lastAnalysisRun } = useQuery({
-    queryKey: ["latest-analysis-run", brand?.id, runningAnalysisId],
+    queryKey: ["latest-analysis-run", brand?.id],
     queryFn: async () => {
       if (!brand?.id) return null;
       
-      // If there's a running analysis, fetch that specific one
-      if (runningAnalysisId) {
-        const { data: runningRun } = await supabase
-          .from("analysis_runs")
-          .select("*")
-          .eq("run_id", runningAnalysisId)
-          .single();
-
-        return runningRun ? {
-          date: runningRun.completed_at || runningRun.created_at,
-          score: runningRun.visibility_score || 0,
-          mentions: runningRun.total_mentions || 0,
-          completionPercentage: runningRun.completion_percentage || 0,
-          status: runningRun.status,
-        } : null;
-      }
-      
-      // Otherwise, fetch the latest completed run
       const { data: latestRun } = await supabase
         .from("analysis_runs")
         .select("*")
         .eq("brand_id", brand.id)
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -86,7 +66,7 @@ const Dashboard = () => {
       } : null;
     },
     enabled: !!brand?.id,
-    refetchInterval: runningAnalysisId ? 5000 : false, // Poll while analysis is running
+    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
   });
 
   const topicParam = searchParams.get("topic");
@@ -121,74 +101,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [topicParam, brandParam]);
 
-  // Real-time subscription AND polling for analysis status updates
-  useEffect(() => {
-    if (!runningAnalysisId || !user?.id) return;
-    
-    console.log('Subscribing to analysis status for runId:', runningAnalysisId);
-    
-    // Real-time subscription
-    const subscription = supabase
-      .channel(`analysis_run_${runningAnalysisId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'analysis_runs',
-        filter: `run_id=eq.${runningAnalysisId}`
-      }, (payload) => {
-        const status = payload.new.status;
-        const completionPercentage = payload.new.completion_percentage;
-        const visibilityScore = payload.new.visibility_score;
-        const totalMentions = payload.new.total_mentions;
-        
-        console.log('Analysis updated via realtime:', { 
-          status, 
-          completionPercentage,
-          visibilityScore,
-          totalMentions
-        });
-        
-        // Immediately invalidate React Query to fetch latest data
-        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand?.id] });
-        
-        // Handle status changes
-        handleAnalysisStatusChange(status);
-      })
-      .subscribe();
-
-    // Polling as backup (check every 5 seconds)
-    const pollInterval = setInterval(async () => {
-      console.log('Polling analysis status for runId:', runningAnalysisId);
-      const { data: run } = await supabase
-        .from('analysis_runs')
-        .select('status, visibility_score, total_mentions, created_at')
-        .eq('run_id', runningAnalysisId)
-        .single();
-      
-      if (run) {
-        console.log('Polled status:', run.status);
-        handleAnalysisStatusChange(run.status);
-      }
-    }, 5000);
-
-    // Handle status changes
-    const handleAnalysisStatusChange = (status: string) => {
-      if (status === 'completed') {
-        // Keep runningAnalysisId so realtime + polling can pick up final score/mentions updates
-        // Just refresh dashboard data so other widgets update
-        loadDashboardData(user.id);
-      } else if (status === 'failed') {
-        toast.error('Analysis failed. Please try again.');
-        setRunningAnalysisId(null);
-      }
-    };
-      
-    return () => {
-      console.log('Unsubscribing from analysis status and stopping polling');
-      subscription.unsubscribe();
-      clearInterval(pollInterval);
-    };
-  }, [runningAnalysisId, user?.id]);
 
   const createBrand = async (userId: string, brandName: string, topicName: string) => {
     try {
@@ -223,10 +135,8 @@ const Dashboard = () => {
               console.error("Analysis error:", error);
               toast.error(error.message || "Failed to start analysis.");
             } else {
-              const runId = data?.data?.runId || data?.runId;
-              if (runId) {
-                setRunningAnalysisId(runId);
-              }
+              // Invalidate query immediately to start polling
+              queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", newBrand.id] });
               toast.success("Analysis started! We'll refresh your dashboard when complete.");
             }
           })
@@ -339,13 +249,14 @@ const Dashboard = () => {
                 brandName={brand.name}
                 topic={brand.topic}
                 userId={user?.id}
-                onAnalysisStarted={(runId) => setRunningAnalysisId(runId)}
-                lastRunDate={lastAnalysisRun?.date}
-                lastRunScore={lastAnalysisRun?.score}
-                lastRunMentions={lastAnalysisRun?.mentions}
-                runningAnalysisId={runningAnalysisId}
-                completionPercentage={lastAnalysisRun?.completionPercentage}
-                analysisStatus={lastAnalysisRun?.status}
+                onAnalysisStarted={() => {
+              queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+            }}
+            lastRunDate={lastAnalysisRun?.date}
+            lastRunScore={lastAnalysisRun?.score}
+            lastRunMentions={lastAnalysisRun?.mentions}
+            completionPercentage={lastAnalysisRun?.completionPercentage}
+            analysisStatus={lastAnalysisRun?.status}
               />
             </div>
 
