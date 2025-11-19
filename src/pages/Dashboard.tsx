@@ -54,12 +54,13 @@ const Dashboard = () => {
         .from("analysis_runs")
         .select("*")
         .eq("brand_id", brand.id)
-        .order("created_at", { ascending: false })
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       return latestRun ? {
-        date: latestRun.created_at,
+        date: latestRun.completed_at || latestRun.created_at,
         score: latestRun.visibility_score || 0,
         mentions: latestRun.total_mentions || 0,
         completionPercentage: latestRun.completion_percentage || 0,
