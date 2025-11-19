@@ -23,10 +23,10 @@ interface AnalysisStatusCardProps {
 const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, runningAnalysisId, completionPercentage, analysisStatus }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
   
-  // Calculate display percentage: completion_percentage + 20, capped at 100
+  // Calculate display percentage: completion_percentage + 5, capped at 100
   const displayPercentage = completionPercentage 
-    ? Math.min(completionPercentage + 20, 100) 
-    : 20;
+    ? Math.min(completionPercentage + 5, 100) 
+    : 5;
   
   // Show progress bar only when analysis is running
   const isAnalysisRunning = runningAnalysisId && (analysisStatus === 'pending' || analysisStatus === 'processing');
