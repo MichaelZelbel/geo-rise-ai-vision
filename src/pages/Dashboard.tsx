@@ -118,7 +118,14 @@ const Dashboard = () => {
         filter: `run_id=eq.${runningAnalysisId}`
       }, (payload) => {
         const status = payload.new.status;
-        console.log('Analysis status updated via realtime:', status);
+        const completionPercentage = payload.new.completion_percentage;
+        
+        console.log('Analysis updated via realtime:', { status, completionPercentage });
+        
+        // Immediately invalidate React Query to fetch latest data
+        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand?.id] });
+        
+        // Handle status changes
         handleAnalysisStatusChange(status);
       })
       .subscribe();
@@ -141,7 +148,6 @@ const Dashboard = () => {
     // Handle status changes
     const handleAnalysisStatusChange = (status: string) => {
       if (status === 'completed') {
-        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand?.id] });
         loadDashboardData(user.id);
         setRunningAnalysisId(null);
       } else if (status === 'failed') {
