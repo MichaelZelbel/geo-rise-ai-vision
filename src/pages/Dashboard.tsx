@@ -119,8 +119,15 @@ const Dashboard = () => {
       }, (payload) => {
         const status = payload.new.status;
         const completionPercentage = payload.new.completion_percentage;
+        const visibilityScore = payload.new.visibility_score;
+        const totalMentions = payload.new.total_mentions;
         
-        console.log('Analysis updated via realtime:', { status, completionPercentage });
+        console.log('Analysis updated via realtime:', { 
+          status, 
+          completionPercentage,
+          visibilityScore,
+          totalMentions
+        });
         
         // Immediately invalidate React Query to fetch latest data
         queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand?.id] });
