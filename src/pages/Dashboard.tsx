@@ -174,8 +174,9 @@ const Dashboard = () => {
     // Handle status changes
     const handleAnalysisStatusChange = (status: string) => {
       if (status === 'completed') {
+        // Keep runningAnalysisId so realtime + polling can pick up final score/mentions updates
+        // Just refresh dashboard data so other widgets update
         loadDashboardData(user.id);
-        setRunningAnalysisId(null);
       } else if (status === 'failed') {
         toast.error('Analysis failed. Please try again.');
         setRunningAnalysisId(null);
