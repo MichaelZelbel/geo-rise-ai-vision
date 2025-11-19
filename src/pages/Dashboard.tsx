@@ -46,10 +46,28 @@ const Dashboard = () => {
 
   // React Query for latest analysis run
   const { data: lastAnalysisRun } = useQuery({
-    queryKey: ["latest-analysis-run", brand?.id],
+    queryKey: ["latest-analysis-run", brand?.id, runningAnalysisId],
     queryFn: async () => {
       if (!brand?.id) return null;
       
+      // If there's a running analysis, fetch that specific one
+      if (runningAnalysisId) {
+        const { data: runningRun } = await supabase
+          .from("analysis_runs")
+          .select("*")
+          .eq("run_id", runningAnalysisId)
+          .single();
+
+        return runningRun ? {
+          date: runningRun.completed_at || runningRun.created_at,
+          score: runningRun.visibility_score || 0,
+          mentions: runningRun.total_mentions || 0,
+          completionPercentage: runningRun.completion_percentage || 0,
+          status: runningRun.status,
+        } : null;
+      }
+      
+      // Otherwise, fetch the latest completed run
       const { data: latestRun } = await supabase
         .from("analysis_runs")
         .select("*")
