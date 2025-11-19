@@ -105,6 +105,33 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [topicParam, brandParam]);
 
+  // Realtime subscription for analysis_runs updates
+  useEffect(() => {
+    if (!brand?.id) return;
+
+    const channel = supabase
+      .channel('analysis-runs-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'analysis_runs',
+          filter: `brand_id=eq.${brand.id}`
+        },
+        (payload) => {
+          console.log('Realtime analysis update:', payload);
+          // Invalidate query to refetch latest data
+          queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [brand?.id, queryClient]);
+
 
   const createBrand = async (userId: string, brandName: string, topicName: string) => {
     try {
