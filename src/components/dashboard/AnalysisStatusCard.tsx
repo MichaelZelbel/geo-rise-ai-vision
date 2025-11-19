@@ -2,6 +2,7 @@ import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { RunAnalysisButton } from "./RunAnalysisButton";
+import { Progress } from "@/components/ui/progress";
 
 interface AnalysisStatusCardProps {
   hasAnalysis: boolean;
@@ -15,10 +16,20 @@ interface AnalysisStatusCardProps {
   lastRunScore?: number;
   lastRunMentions?: number;
   runningAnalysisId?: string | null;
+  completionPercentage?: number;
+  analysisStatus?: string;
 }
 
-const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, runningAnalysisId }: AnalysisStatusCardProps) => {
+const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, runningAnalysisId, completionPercentage, analysisStatus }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
+  
+  // Calculate display percentage: completion_percentage + 20, capped at 100
+  const displayPercentage = completionPercentage 
+    ? Math.min(completionPercentage + 20, 100) 
+    : 20;
+  
+  // Show progress bar only when analysis is running
+  const isAnalysisRunning = runningAnalysisId && (analysisStatus === 'pending' || analysisStatus === 'processing');
 
   return (
     <div className="bg-card rounded-xl p-6 border border-primary/20 shadow-sm">
@@ -37,15 +48,27 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
             Get your AI visibility score and insights
           </p>
           {brandId && brandName && topic && userId && (
-            <RunAnalysisButton
-              brandId={brandId}
-              brandName={brandName}
-              topic={topic}
-              userId={userId}
-              onAnalysisStarted={onAnalysisStarted}
-              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 w-full"
-              isAnalysisRunning={!!runningAnalysisId}
-            />
+            <>
+              <RunAnalysisButton
+                brandId={brandId}
+                brandName={brandName}
+                topic={topic}
+                userId={userId}
+                onAnalysisStarted={onAnalysisStarted}
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 w-full"
+                isAnalysisRunning={!!runningAnalysisId}
+              />
+              
+              {isAnalysisRunning && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Analysis Progress</span>
+                    <span className="font-semibold text-primary">{displayPercentage}%</span>
+                  </div>
+                  <Progress value={displayPercentage} className="h-2" />
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -91,16 +114,28 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
                 Daily analysis active - Next run tomorrow
               </p>
               {brandId && brandName && topic && userId && (
-                <RunAnalysisButton
-                  brandId={brandId}
-                  brandName={brandName}
-                  topic={topic}
-                  userId={userId}
-                  onAnalysisStarted={onAnalysisStarted}
-                  variant="outline"
-                  className="w-full"
-                  isAnalysisRunning={!!runningAnalysisId}
-                />
+                <>
+                  <RunAnalysisButton
+                    brandId={brandId}
+                    brandName={brandName}
+                    topic={topic}
+                    userId={userId}
+                    onAnalysisStarted={onAnalysisStarted}
+                    variant="outline"
+                    className="w-full"
+                    isAnalysisRunning={!!runningAnalysisId}
+                  />
+                  
+                  {isAnalysisRunning && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Analysis Progress</span>
+                        <span className="font-semibold text-primary">{displayPercentage}%</span>
+                      </div>
+                      <Progress value={displayPercentage} className="h-2" />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
