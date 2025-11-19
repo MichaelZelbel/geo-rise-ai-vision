@@ -62,6 +62,8 @@ const Dashboard = () => {
         date: latestRun.created_at,
         score: latestRun.visibility_score || 0,
         mentions: latestRun.total_mentions || 0,
+        completionPercentage: latestRun.completion_percentage || 0,
+        status: latestRun.status,
       } : null;
     },
     enabled: !!brand?.id,
@@ -309,6 +311,8 @@ const Dashboard = () => {
                 lastRunScore={lastAnalysisRun?.score}
                 lastRunMentions={lastAnalysisRun?.mentions}
                 runningAnalysisId={runningAnalysisId}
+                completionPercentage={lastAnalysisRun?.completionPercentage}
+                analysisStatus={lastAnalysisRun?.status}
               />
             </div>
 
