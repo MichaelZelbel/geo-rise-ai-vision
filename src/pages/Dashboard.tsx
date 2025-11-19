@@ -43,7 +43,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // React Query for latest analysis run - single source of truth, polls every 2 seconds
+  // React Query for latest analysis run - polls only when analysis is running
   const { data: lastAnalysisRun } = useQuery({
     queryKey: ["latest-analysis-run", brand?.id],
     queryFn: async () => {
@@ -66,7 +66,11 @@ const Dashboard = () => {
       } : null;
     },
     enabled: !!brand?.id,
-    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
+    refetchInterval: (query) => {
+      // Only poll every 2 seconds when analysis is running
+      const status = query.state.data?.status;
+      return (status === 'pending' || status === 'processing') ? 2000 : false;
+    },
   });
 
   const topicParam = searchParams.get("topic");
