@@ -151,7 +151,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
   const renderChatContent = () => (
     <>
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <ScrollArea className="flex-1 pr-4 mb-4 h-full">
+        <ScrollArea className="h-full pr-4 mb-4">
           {messages.length === 0 ? (
             <div className="space-y-3">
               <div className="text-center py-4">
