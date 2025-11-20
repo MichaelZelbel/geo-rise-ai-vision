@@ -90,313 +90,306 @@ const Dashboard = () => {
       return (status === 'pending' || status === 'processing') ? 2000 : false;
     },
   });
-},
-  enabled: !!brand?.id,
-  refetchInterval: (query) => {
-      // Only poll every 2 seconds when analysis is running
-      const status = query.state.data?.status;
-return (status === 'pending' || status === 'processing') ? 2000 : false;
-    },
-  });
 
-const topicParam = searchParams.get("topic");
-const brandParam = searchParams.get("brand");
 
-useEffect(() => {
-  // Set up auth state listener
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    (_event, session) => {
+  const topicParam = searchParams.get("topic");
+  const brandParam = searchParams.get("brand");
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-    }
-  );
 
-  // Check for existing session
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setSession(session);
-    setUser(session?.user ?? null);
+      if (session?.user) {
+        loadDashboardData(session.user.id);
 
-    if (session?.user) {
-      loadDashboardData(session.user.id);
-
-      // Create brand if we have the data from wizard
-      if (topicParam && brandParam) {
-        createBrand(session.user.id, brandParam, topicParam);
+        // Create brand if we have the data from wizard
+        if (topicParam && brandParam) {
+          createBrand(session.user.id, brandParam, topicParam);
+        }
+      } else {
+        setLoading(false);
       }
-    } else {
+    });
+
+    return () => subscription.unsubscribe();
+  }, [topicParam, brandParam]);
+
+  // Realtime subscription for analysis_runs updates
+  useEffect(() => {
+    if (!brand?.id) return;
+
+    const channel = supabase
+      .channel('analysis-runs-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'analysis_runs',
+          filter: `brand_id=eq.${brand.id}`
+        },
+        (payload) => {
+          console.log('Realtime analysis update:', payload);
+          // Invalidate query to refetch latest data
+          queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [brand?.id, queryClient]);
+
+  // Auto-trigger competitor analysis if missing
+  useEffect(() => {
+    if (lastAnalysisRun?.status === 'completed' && !lastAnalysisRun.competitor_data && brand?.id) {
+      console.log("Triggering competitor analysis for run:", lastAnalysisRun.id);
+      supabase.functions.invoke('analyze-competitors', {
+        body: { runId: lastAnalysisRun.id }
+      }).then(({ error }) => {
+        if (error) console.error("Auto-analysis failed:", error);
+        else queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+      });
+    }
+  }, [lastAnalysisRun, brand?.id, queryClient]);
+
+
+  const createBrand = async (userId: string, brandName: string, topicName: string) => {
+    try {
+      const { data: newBrand, error } = await supabase.from("brands").insert({
+        user_id: userId,
+        name: brandName,
+        topic: topicName,
+      }).select().single();
+
+      if (error) throw error;
+
+      toast.success("Brand created successfully!");
+
+      // Clear URL params
+      navigate("/dashboard", { replace: true });
+
+      // Trigger analysis in background
+      if (newBrand) {
+        toast.info("Starting AI visibility analysis...");
+
+        supabase.functions
+          .invoke('run-analysis', {
+            body: {
+              brandId: newBrand.id,
+              brandName: brandName,
+              topic: topicName,
+              userId: userId
+            }
+          })
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("Analysis error:", error);
+              toast.error(error.message || "Failed to start analysis.");
+            } else {
+              // Invalidate query immediately to start polling
+              queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", newBrand.id] });
+              toast.success("Analysis started! We'll refresh your dashboard when complete.");
+            }
+          })
+          .catch((err) => {
+            console.error("Analysis request failed:", err);
+            toast.error(err?.message || "Failed to send request to analysis function.");
+          });
+      }
+
+      loadDashboardData(userId);
+    } catch (err) {
+      console.error("Error creating brand:", err);
+      toast.error("Failed to create brand");
+    }
+  };
+
+  const loadDashboardData = async (userId: string) => {
+    try {
+      // Fetch user's brand
+      const { data: brandData, error: brandError } = await supabase
+        .from("brands")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (brandError) throw brandError;
+      setBrand(brandData);
+
+      // Fetch user's profile
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      setProfile(profileData);
+
+      // If brand exists, fetch analyses
+      if (brandData) {
+        const { data: analysesData, error: analysesError } = await supabase
+          .from("analyses")
+          .select("ai_engine, points_earned, sentiment, mentioned")
+          .eq("brand_id", brandData.id);
+
+        if (analysesError) throw analysesError;
+
+        const engines = [...new Set(analysesData?.map((a) => a.ai_engine) || [])];
+        setMentionedEngines(engines);
+        setHasAnalysis(analysesData && analysesData.length > 0);
+
+        // Calculate per-engine scores
+        const scores: Record<string, { score: number; status: string }> = {};
+        engines.forEach(engine => {
+          const engineData = analysesData?.filter(a => a.ai_engine === engine) || [];
+          const avgScore = engineData.reduce((sum, a) => sum + (a.points_earned || 0), 0) / (engineData.length || 1);
+          const positiveSentiment = engineData.filter(a => a.sentiment === 'positive').length;
+          const negativeSentiment = engineData.filter(a => a.sentiment === 'negative').length;
+
+          let status = "Sentiment Unknown";
+          if (positiveSentiment > negativeSentiment) status = "Sentiment Positive";
+          else if (negativeSentiment > 0) status = "Issues Found";
+
+          // Scale the score by 100 to make it more readable (0.26 becomes 26)
+          scores[engine] = { score: Math.round(avgScore * 100), status };
+        });
+        setEngineScores(scores);
+
+        // Invalidate query to trigger refetch
+        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brandData.id] });
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+      toast.error("Failed to load dashboard data");
       setLoading(false);
     }
-  });
-
-  return () => subscription.unsubscribe();
-}, [topicParam, brandParam]);
-
-// Realtime subscription for analysis_runs updates
-useEffect(() => {
-  if (!brand?.id) return;
-
-  const channel = supabase
-    .channel('analysis-runs-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'analysis_runs',
-        filter: `brand_id=eq.${brand.id}`
-      },
-      (payload) => {
-        console.log('Realtime analysis update:', payload);
-        // Invalidate query to refetch latest data
-        queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
   };
-}, [brand?.id, queryClient]);
 
-// Auto-trigger competitor analysis if missing
-useEffect(() => {
-  if (lastAnalysisRun?.status === 'completed' && !lastAnalysisRun.competitor_data && brand?.id) {
-    console.log("Triggering competitor analysis for run:", lastAnalysisRun.id);
-    supabase.functions.invoke('analyze-competitors', {
-      body: { runId: lastAnalysisRun.id }
-    }).then(({ error }) => {
-      if (error) console.error("Auto-analysis failed:", error);
-      else queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
-    });
-  }
-}, [lastAnalysisRun, brand?.id, queryClient]);
+  const handleStartAnalysis = () => {
+    setShowWizard(true);
+  };
 
-
-const createBrand = async (userId: string, brandName: string, topicName: string) => {
-  try {
-    const { data: newBrand, error } = await supabase.from("brands").insert({
-      user_id: userId,
-      name: brandName,
-      topic: topicName,
-    }).select().single();
-
-    if (error) throw error;
-
-    toast.success("Brand created successfully!");
-
-    // Clear URL params
-    navigate("/dashboard", { replace: true });
-
-    // Trigger analysis in background
-    if (newBrand) {
-      toast.info("Starting AI visibility analysis...");
-
-      supabase.functions
-        .invoke('run-analysis', {
-          body: {
-            brandId: newBrand.id,
-            brandName: brandName,
-            topic: topicName,
-            userId: userId
-          }
-        })
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Analysis error:", error);
-            toast.error(error.message || "Failed to start analysis.");
-          } else {
-            // Invalidate query immediately to start polling
-            queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", newBrand.id] });
-            toast.success("Analysis started! We'll refresh your dashboard when complete.");
-          }
-        })
-        .catch((err) => {
-          console.error("Analysis request failed:", err);
-          toast.error(err?.message || "Failed to send request to analysis function.");
-        });
-    }
-
-    loadDashboardData(userId);
-  } catch (err) {
-    console.error("Error creating brand:", err);
-    toast.error("Failed to create brand");
-  }
-};
-
-const loadDashboardData = async (userId: string) => {
-  try {
-    // Fetch user's brand
-    const { data: brandData, error: brandError } = await supabase
-      .from("brands")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (brandError) throw brandError;
-    setBrand(brandData);
-
-    // Fetch user's profile
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("plan")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (profileError) throw profileError;
-    setProfile(profileData);
-
-    // If brand exists, fetch analyses
-    if (brandData) {
-      const { data: analysesData, error: analysesError } = await supabase
-        .from("analyses")
-        .select("ai_engine, points_earned, sentiment, mentioned")
-        .eq("brand_id", brandData.id);
-
-      if (analysesError) throw analysesError;
-
-      const engines = [...new Set(analysesData?.map((a) => a.ai_engine) || [])];
-      setMentionedEngines(engines);
-      setHasAnalysis(analysesData && analysesData.length > 0);
-
-      // Calculate per-engine scores
-      const scores: Record<string, { score: number; status: string }> = {};
-      engines.forEach(engine => {
-        const engineData = analysesData?.filter(a => a.ai_engine === engine) || [];
-        const avgScore = engineData.reduce((sum, a) => sum + (a.points_earned || 0), 0) / (engineData.length || 1);
-        const positiveSentiment = engineData.filter(a => a.sentiment === 'positive').length;
-        const negativeSentiment = engineData.filter(a => a.sentiment === 'negative').length;
-
-        let status = "Sentiment Unknown";
-        if (positiveSentiment > negativeSentiment) status = "Sentiment Positive";
-        else if (negativeSentiment > 0) status = "Issues Found";
-
-        // Scale the score by 100 to make it more readable (0.26 becomes 26)
-        scores[engine] = { score: Math.round(avgScore * 100), status };
-      });
-      setEngineScores(scores);
-
-      // Invalidate query to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brandData.id] });
-    }
-
-    setLoading(false);
-  } catch (err) {
-    console.error("Error loading dashboard data:", err);
-    toast.error("Failed to load dashboard data");
-    setLoading(false);
-  }
-};
-
-const handleStartAnalysis = () => {
-  setShowWizard(true);
-};
-
-if (loading) {
-  return (
-    <div className="min-h-screen bg-background pt-20">
-      <DashboardHeader userEmail={user?.email} userPlan={profile?.plan} />
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-64 rounded-xl" />
-          <Skeleton className="h-64 rounded-xl" />
-          <Skeleton className="h-64 rounded-xl" />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pt-20">
+        <DashboardHeader userEmail={user?.email} userPlan={profile?.plan} />
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
         </div>
       </div>
+    );
+  }
+
+  if (!user) {
+    navigate("/");
+    return null;
+  }
+
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'business' ||
+    profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
+
+  // Calculate Share of Voice (percentage of queries where brand was mentioned)
+  const shareOfVoice = lastAnalysisRun?.totalQueries
+    ? Math.round((lastAnalysisRun.mentions / lastAnalysisRun.totalQueries) * 100)
+    : 0;
+
+  // All 8 AI engines
+  const allEngines = [
+    { id: "chatgpt", name: "ChatGPT" },
+    { id: "claude", name: "Claude" },
+    { id: "gemini", name: "Gemini" },
+    { id: "perplexity", name: "Perplexity" },
+    { id: "deepseek", name: "DeepSeek" },
+    { id: "grok", name: "Grok" },
+    { id: "mistral", name: "Mistral" },
+    { id: "metaai", name: "Meta AI" }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background pt-20">
+      <DashboardHeader userEmail={user.email} userPlan={profile?.plan} />
+      <main className="container mx-auto px-4 py-8">
+        {!brand ? (
+          <EmptyState onStartAnalysis={handleStartAnalysis} />
+        ) : (
+          <div className="space-y-6">
+            {/* First Row - Unified Hero Metrics */}
+            <HeroMetricsCard
+              visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
+              scoreTrend={lastAnalysisRun?.scoreTrend}
+              sparklineData={lastAnalysisRun?.sparklineData}
+              shareOfVoice={shareOfVoice}
+              totalMentions={lastAnalysisRun?.mentions || 0}
+              brandName={brand.name}
+              topic={brand.topic}
+              brandId={brand.id}
+              userId={user.id}
+              lastRun={brand.last_run}
+              isAnalysisRunning={lastAnalysisRun?.status === 'pending' || lastAnalysisRun?.status === 'processing'}
+              analysisStatus={lastAnalysisRun?.status}
+              analysisProgress={lastAnalysisRun?.completionPercentage}
+              onAnalysisStarted={(runId) => {
+                queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+              }}
+            />
+
+            {/* Second Row - AI Engine Breakdown (4x2 grid) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Engine cards would go here - placeholders for now as they were missing in source */}
+              {allEngines.map((engine) => (
+                <AIEngineCard
+                  key={engine.id}
+                  engineId={engine.id}
+                  engineName={engine.name}
+                  score={engineScores[engine.id]?.score || 0}
+                  status={engineScores[engine.id]?.status || "No Data"}
+                  trend={0} // Placeholder
+                />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <CompetitorIntelligenceCard
+                  isPro={isPro}
+                  competitorData={lastAnalysisRun?.competitor_data}
+                />
+              </div>
+              <div>
+                <CoachGEOvanniCard
+                  brandId={brand.id}
+                  userPlan={profile?.plan || 'free'}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+      <WizardModal
+        open={showWizard}
+        onOpenChange={setShowWizard}
+      />
     </div>
   );
-}
-
-if (!user) {
-  navigate("/");
-  return null;
-}
-
-const isPro = profile?.plan === 'pro' || profile?.plan === 'business' ||
-  profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
-
-// Calculate Share of Voice (percentage of queries where brand was mentioned)
-const shareOfVoice = lastAnalysisRun?.totalQueries
-  ? Math.round((lastAnalysisRun.mentions / lastAnalysisRun.totalQueries) * 100)
-  : 0;
-
-// All 8 AI engines
-const allEngines = [
-  { id: "chatgpt", name: "ChatGPT" },
-  { id: "claude", name: "Claude" },
-  { id: "gemini", name: "Gemini" },
-  { id: "perplexity", name: "Perplexity" },
-  { id: "deepseek", name: "DeepSeek" },
-  { id: "grok", name: "Grok" },
-  { id: "mistral", name: "Mistral" },
-  { id: "metaai", name: "Meta AI" }
-];
-
-return (
-  <div className="min-h-screen bg-background pt-20">
-    <DashboardHeader userEmail={user.email} userPlan={profile?.plan} />
-    <main className="container mx-auto px-4 py-8">
-      {!brand ? (
-        <EmptyState onStartAnalysis={handleStartAnalysis} />
-      ) : (
-        <div className="space-y-6">
-          {/* First Row - Unified Hero Metrics */}
-          <HeroMetricsCard
-            visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
-            scoreTrend={lastAnalysisRun?.scoreTrend}
-            sparklineData={lastAnalysisRun?.sparklineData}
-            shareOfVoice={shareOfVoice}
-            totalMentions={lastAnalysisRun?.mentions || 0}
-            brandName={brand.name}
-            topic={brand.topic}
-            brandId={brand.id}
-            userId={user.id}
-            lastRun={brand.last_run}
-            isAnalysisRunning={lastAnalysisRun?.status === 'pending' || lastAnalysisRun?.status === 'processing'}
-            analysisStatus={lastAnalysisRun?.status}
-            analysisProgress={lastAnalysisRun?.completionPercentage}
-            onAnalysisStarted={(runId) => {
-              queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
-            }}
-          />
-
-          {/* Second Row - AI Engine Breakdown (4x2 grid) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Engine cards would go here - placeholders for now as they were missing in source */}
-            {allEngines.map((engine) => (
-              <AIEngineCard
-                key={engine.id}
-                engineId={engine.id}
-                engineName={engine.name}
-                score={engineScores[engine.id]?.score || 0}
-                status={engineScores[engine.id]?.status || "No Data"}
-                trend={0} // Placeholder
-              />
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <CompetitorIntelligenceCard
-                isPro={isPro}
-                competitorData={lastAnalysisRun?.competitor_data}
-              />
-            </div>
-            <div>
-              <CoachGEOvanniCard
-                brandId={brand.id}
-                userPlan={profile?.plan || 'free'}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
-    <WizardModal
-      open={showWizard}
-      onOpenChange={setShowWizard}
-    />
-  </div>
-);
 };
 
 export default Dashboard;
