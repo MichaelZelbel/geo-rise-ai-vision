@@ -42,6 +42,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // React Query for latest analysis run and trend data - polls only when analysis is running
   const { data: lastAnalysisRun } = useQuery({
     queryKey: ["latest-analysis-run", brand?.id],
     queryFn: async () => {
@@ -71,7 +72,6 @@ const Dashboard = () => {
       }));
 
       return {
-        id: latestRun.id, // Ensure ID is passed for auto-trigger
         date: latestRun.completed_at || latestRun.created_at,
         score: currentScore,
         scoreTrend: scoreTrend,
@@ -80,7 +80,6 @@ const Dashboard = () => {
         totalQueries: latestRun.total_queries || 20,
         completionPercentage: latestRun.completion_percentage || 0,
         status: latestRun.status,
-        competitor_data: latestRun.competitor_data // Add this field
       };
     },
     enabled: !!brand?.id,
@@ -90,7 +89,6 @@ const Dashboard = () => {
       return (status === 'pending' || status === 'processing') ? 2000 : false;
     },
   });
-
 
   const topicParam = searchParams.get("topic");
   const brandParam = searchParams.get("brand");
@@ -150,19 +148,6 @@ const Dashboard = () => {
       supabase.removeChannel(channel);
     };
   }, [brand?.id, queryClient]);
-
-  // Auto-trigger competitor analysis if missing
-  useEffect(() => {
-    if (lastAnalysisRun?.status === 'completed' && !lastAnalysisRun.competitor_data && brand?.id) {
-      console.log("Triggering competitor analysis for run:", lastAnalysisRun.id);
-      supabase.functions.invoke('analyze-competitors', {
-        body: { runId: lastAnalysisRun.id }
-      }).then(({ error }) => {
-        if (error) console.error("Auto-analysis failed:", error);
-        else queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
-      });
-    }
-  }, [lastAnalysisRun, brand?.id, queryClient]);
 
 
   const createBrand = async (userId: string, brandName: string, topicName: string) => {
@@ -353,32 +338,36 @@ const Dashboard = () => {
             />
 
             {/* Second Row - AI Engine Breakdown (4x2 grid) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Engine cards would go here - placeholders for now as they were missing in source */}
-              {allEngines.map((engine) => (
-                <AIEngineCard
-                  key={engine.id}
-                  engineId={engine.id}
-                  engineName={engine.name}
-                  score={engineScores[engine.id]?.score || 0}
-                  status={engineScores[engine.id]?.status || "No Data"}
-                  trend={0} // Placeholder
-                />
-              ))}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {allEngines.map((engine) => {
+                const hasData = mentionedEngines.includes(engine.id);
+                const engineData = engineScores[engine.id];
+                return (
+                  <AIEngineCard
+                    key={engine.id}
+                    name={engine.name}
+                    score={engineData?.score}
+                    status={engineData?.status}
+                    hasData={hasData}
+                  />
+                );
+              })}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <CompetitorIntelligenceCard
-                  isPro={isPro}
-                  competitorData={lastAnalysisRun?.competitor_data}
-                />
+            {/* Third Row - Bottom Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column - 3 stacked cards */}
+              <div className="space-y-6">
+                <CompetitorIntelligenceCard isPro={isPro} />
+                <ActionPlanCard />
+                <SemanticAnalysisCard />
               </div>
-              <div>
-                <CoachGEOvanniCard
-                  brandId={brand.id}
-                  userPlan={profile?.plan || 'free'}
-                />
+
+              {/* Right Column - Coach GEOvanni */}
+              <div className="relative">
+                <div className="md:absolute md:inset-0">
+                  <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} className="h-full" />
+                </div>
               </div>
             </div>
           </div>
