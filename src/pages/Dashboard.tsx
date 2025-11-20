@@ -317,36 +317,34 @@ const Dashboard = () => {
             />
 
             {/* Second Row - AI Engine Breakdown (4x2 grid) */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4">AI Engine Performance</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {allEngines.map((engine) => {
-                  const hasData = mentionedEngines.includes(engine.id);
-                  const engineData = engineScores[engine.id];
-                  return (
-                    <AIEngineCard
-                      key={engine.id}
-                      name={engine.name}
-                      score={engineData?.score}
-                      status={engineData?.status}
-                      hasData={hasData}
-                    />
-                  );
-                })}
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {allEngines.map((engine) => {
+                const hasData = mentionedEngines.includes(engine.id);
+                const engineData = engineScores[engine.id];
+                return (
+                  <AIEngineCard
+                    key={engine.id}
+                    name={engine.name}
+                    score={engineData?.score}
+                    status={engineData?.status}
+                    hasData={hasData}
+                  />
+                );
+              })}
             </div>
 
             {/* Third Row - Bottom Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Left Column - 3 stacked cards */}
+              <div className="md:col-span-2 space-y-6">
                 <CompetitorIntelligenceCard isPro={isPro} />
-              </div>
-              <div className="lg:col-span-2">
-                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
-              </div>
-              <div className="lg:col-span-1 space-y-6">
                 <ActionPlanCard />
                 <SemanticAnalysisCard />
+              </div>
+              
+              {/* Right Column - Coach GEOvanni (full height) */}
+              <div className="md:col-span-2">
+                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
               </div>
             </div>
           </div>
