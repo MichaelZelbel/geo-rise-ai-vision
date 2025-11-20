@@ -150,7 +150,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   const renderChatContent = () => (
     <>
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <ScrollArea className="flex-1 pr-4 mb-4">
           {messages.length === 0 ? (
             <div className="space-y-3">
@@ -261,8 +261,8 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   return (
     <>
-      <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col flex-1">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
             <div>
