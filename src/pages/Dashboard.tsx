@@ -42,7 +42,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // React Query for latest analysis run - polls only when analysis is running
+  // React Query for latest analysis run and trend data - polls only when analysis is running
   const { data: lastAnalysisRun } = useQuery({
     queryKey: ["latest-analysis-run", brand?.id],
     queryFn: async () => {
@@ -52,8 +52,9 @@ const Dashboard = () => {
         .from("analysis_runs")
         .select("*")
         .eq("brand_id", brand.id)
+        .not("visibility_score", "is", null)
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(10);
 
       if (!runs || runs.length === 0) return null;
 
@@ -65,10 +66,16 @@ const Dashboard = () => {
       const previousScore = previousRun?.visibility_score || 0;
       const scoreTrend = currentScore - previousScore;
 
+      // Prepare sparkline data (reverse to show oldest to newest)
+      const sparklineData = runs.reverse().map(run => ({
+        score: run.visibility_score || 0
+      }));
+
       return {
         date: latestRun.completed_at || latestRun.created_at,
         score: currentScore,
         scoreTrend: scoreTrend,
+        sparklineData: sparklineData,
         mentions: latestRun.total_mentions || 0,
         totalQueries: latestRun.total_queries || 20,
         completionPercentage: latestRun.completion_percentage || 0,
@@ -314,6 +321,7 @@ const Dashboard = () => {
             <HeroMetricsCard
               visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
               scoreTrend={lastAnalysisRun?.scoreTrend}
+              sparklineData={lastAnalysisRun?.sparklineData}
               shareOfVoice={shareOfVoice}
               totalMentions={lastAnalysisRun?.mentions || 0}
               brandName={brand.name}

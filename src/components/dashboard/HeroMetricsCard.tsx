@@ -3,10 +3,12 @@ import { RunAnalysisButton } from "./RunAnalysisButton";
 import { Cell, PieChart, Pie } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
+import ScoreTrendSparkline from "./ScoreTrendSparkline";
 
 interface HeroMetricsCardProps {
   visibilityScore: number;
   scoreTrend?: number;
+  sparklineData?: Array<{ score: number }>;
   shareOfVoice: number;
   totalMentions: number;
   brandName: string;
@@ -23,6 +25,7 @@ interface HeroMetricsCardProps {
 const HeroMetricsCard = ({
   visibilityScore,
   scoreTrend,
+  sparklineData,
   shareOfVoice,
   totalMentions,
   brandName,
@@ -56,8 +59,13 @@ const HeroMetricsCard = ({
         {/* Visibility Score Card */}
         <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
           <p className="text-sm text-muted-foreground mb-1">GEO Visibility Score</p>
-          <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-2">
-            {visibilityScore}
+          <div className="flex items-end justify-between gap-4 mb-2">
+            <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              {visibilityScore}
+            </div>
+            {sparklineData && sparklineData.length > 1 && (
+              <ScoreTrendSparkline data={sparklineData} />
+            )}
           </div>
           <div className="flex items-center gap-2 text-sm mb-4">
             {scoreTrend !== undefined && scoreTrend !== 0 ? (
@@ -179,8 +187,13 @@ const HeroMetricsCard = ({
         {/* Section 1: Visibility Score */}
         <div className="p-6">
           <h3 className="text-lg font-semibold text-card-foreground mb-1">GEO Visibility Score</h3>
-          <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-2">
-            {visibilityScore}
+          <div className="flex items-end justify-between gap-4 mb-2">
+            <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              {visibilityScore}
+            </div>
+            {sparklineData && sparklineData.length > 1 && (
+              <ScoreTrendSparkline data={sparklineData} />
+            )}
           </div>
           <div className="flex items-center gap-2 text-sm mb-4">
             {scoreTrend !== undefined && scoreTrend !== 0 ? (
