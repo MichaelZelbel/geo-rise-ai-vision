@@ -66,29 +66,6 @@ const TestLayout = () => {
                   score={engineData?.score}
                   status={engineData?.status}
                   hasData={hasData}
-                />
-              );
-            })}
-          </div>
-
-          {/* Third Row - Bottom Section */}
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Left Column - 3 stacked cards */}
-            <div className="flex-1 space-y-6">
-              <CompetitorIntelligenceCard isPro={true} />
-              <ActionPlanCard />
-              <SemanticAnalysisCard />
-            </div>
-
-            {/* Right Column - Coach GEOvanni */}
-            <div className="flex-1 flex flex-col h-full">
-              <CoachGEOvanniCard brandId="test-brand-id" userPlan="pro" className="h-full" />
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
 };
 
-export default TestLayout;
+            export default TestLayout;
