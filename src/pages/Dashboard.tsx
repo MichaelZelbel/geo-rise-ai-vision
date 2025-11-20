@@ -329,11 +329,35 @@ const Dashboard = () => {
                     status={engineData?.status}
                     hasData={hasData}
                   />
-        open = { showWizard }
-                onOpenChange = { setShowWizard }
-                  />
+                );
+              })}
+            </div>
+
+            {/* Third Row - Bottom Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column - 3 stacked cards */}
+              <div className="space-y-6">
+                <CompetitorIntelligenceCard isPro={isPro} />
+                <ActionPlanCard />
+                <SemanticAnalysisCard />
+              </div>
+
+              {/* Right Column - Coach GEOvanni */}
+              <div className="relative">
+                <div className="md:absolute md:inset-0">
+                  <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} className="h-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+      <WizardModal
+        open={showWizard}
+        onOpenChange={setShowWizard}
+      />
     </div>
-            );
+  );
 };
 
-            export default Dashboard;
+export default Dashboard;
