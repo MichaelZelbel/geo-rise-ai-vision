@@ -48,21 +48,31 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!brand?.id) return null;
 
-      const { data: latestRun } = await supabase
+      const { data: runs } = await supabase
         .from("analysis_runs")
         .select("*")
         .eq("brand_id", brand.id)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(2);
 
-      return latestRun ? {
+      if (!runs || runs.length === 0) return null;
+
+      const latestRun = runs[0];
+      const previousRun = runs.length > 1 ? runs[1] : null;
+
+      // Calculate trend
+      const currentScore = latestRun.visibility_score || 0;
+      const previousScore = previousRun?.visibility_score || 0;
+      const scoreTrend = currentScore - previousScore;
+
+      return {
         date: latestRun.completed_at || latestRun.created_at,
-        score: latestRun.visibility_score || 0,
+        score: currentScore,
+        scoreTrend: scoreTrend,
         mentions: latestRun.total_mentions || 0,
         completionPercentage: latestRun.completion_percentage || 0,
         status: latestRun.status,
-      } : null;
+      };
     },
     enabled: !!brand?.id,
     refetchInterval: (query) => {
@@ -301,6 +311,7 @@ const Dashboard = () => {
             {/* First Row - Unified Hero Metrics */}
             <HeroMetricsCard
               visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
+              scoreTrend={lastAnalysisRun?.scoreTrend}
               shareOfVoice={shareOfVoice}
               totalMentions={lastAnalysisRun?.mentions || 0}
               brandName={brand.name}

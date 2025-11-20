@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface HeroMetricsCardProps {
   visibilityScore: number;
+  scoreTrend?: number;
   shareOfVoice: number;
   totalMentions: number;
   brandName: string;
@@ -21,6 +22,7 @@ interface HeroMetricsCardProps {
 
 const HeroMetricsCard = ({
   visibilityScore,
+  scoreTrend,
   shareOfVoice,
   totalMentions,
   brandName,
@@ -58,9 +60,17 @@ const HeroMetricsCard = ({
             {visibilityScore}
           </div>
           <div className="flex items-center gap-2 text-sm mb-4">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            <span className="text-green-500">+5 pts</span>
-            <span className="text-muted-foreground">vs last run</span>
+            {scoreTrend !== undefined && scoreTrend !== 0 ? (
+              <>
+                <TrendingUp className={`h-4 w-4 ${scoreTrend > 0 ? 'text-green-500' : 'text-red-500'}`} />
+                <span className={scoreTrend > 0 ? 'text-green-500' : 'text-red-500'}>
+                  {scoreTrend > 0 ? '+' : ''}{scoreTrend.toFixed(2)} pts
+                </span>
+                <span className="text-muted-foreground">vs last run</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">No previous run to compare</span>
+            )}
           </div>
           {lastRun && (
             <p className="text-xs text-muted-foreground">
@@ -173,9 +183,17 @@ const HeroMetricsCard = ({
             {visibilityScore}
           </div>
           <div className="flex items-center gap-2 text-sm mb-4">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            <span className="text-green-500">+5 pts</span>
-            <span className="text-muted-foreground">vs last run</span>
+            {scoreTrend !== undefined && scoreTrend !== 0 ? (
+              <>
+                <TrendingUp className={`h-4 w-4 ${scoreTrend > 0 ? 'text-green-500' : 'text-red-500'}`} />
+                <span className={scoreTrend > 0 ? 'text-green-500' : 'text-red-500'}>
+                  {scoreTrend > 0 ? '+' : ''}{scoreTrend.toFixed(2)} pts
+                </span>
+                <span className="text-muted-foreground">vs last run</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">No previous run to compare</span>
+            )}
           </div>
           {lastRun && (
             <p className="text-xs text-muted-foreground">
