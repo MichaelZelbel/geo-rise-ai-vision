@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -150,59 +150,59 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   const renderChatContent = () => (
     <>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ScrollArea className="flex-1 pr-4 mb-4">
-          {messages.length === 0 ? (
-            <div className="space-y-3">
-              <div className="text-center py-4">
-                <Bot className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Hi! I'm Coach GEOvanni. Ask me anything about improving your visibility.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Quick questions:</p>
-                {suggestedQuestions.map((q, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start text-left text-xs"
-                    onClick={() => setInput(q)}
-                  >
-                    {q}
-                  </Button>
-                ))}
-              </div>
+      <div
+        className="flex-1 overflow-y-auto pr-4 mb-4 min-h-0"
+        ref={scrollRef}
+      >
+        {messages.length === 0 ? (
+          <div className="space-y-3">
+            <div className="text-center py-4">
+              <Bot className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Hi! I'm Coach GEOvanni. Ask me anything about improving your visibility.
+              </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {messages.map((msg, i) => (
-                <div
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Quick questions:</p>
+              {suggestedQuestions.map((q, i) => (
+                <Button
                   key={i}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left text-xs"
+                  onClick={() => setInput(q)}
                 >
-                  <div
-                    className={`max-w-[85%] rounded-lg p-3 ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                </div>
+                  {q}
+                </Button>
               ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                </div>
-              )}
             </div>
-          )}
-        </ScrollArea>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-lg p-3 ${msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                    }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-lg p-3">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2 flex-shrink-0">
@@ -240,7 +240,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
             <h3 className="text-lg font-semibold">Chat with Coach GEOvanni</h3>
           </div>
         </div>
-        
+
         <div className="text-center py-6 space-y-4 flex-1 flex flex-col justify-center">
           <div className="p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg">
             <Sparkles className="h-12 w-12 mx-auto text-primary mb-2" />
@@ -249,7 +249,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
               Get personalized advice on improving your GEO
             </p>
           </div>
-          
+
           <Button onClick={() => navigate("/pricing")} className="w-full">
             Upgrade to Pro
           </Button>
