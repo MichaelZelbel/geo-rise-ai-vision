@@ -7,14 +7,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import VisibilityScoreCard from "@/components/dashboard/VisibilityScoreCard";
-import AIEngineBreakdownCard from "@/components/dashboard/AIEngineBreakdownCard";
-import AnalysisStatusCard from "@/components/dashboard/AnalysisStatusCard";
-import CompetitorSnapshotCard from "@/components/dashboard/CompetitorSnapshotCard";
-import QuickWinsCard from "@/components/dashboard/QuickWinsCard";
-import TopMentionsCard from "@/components/dashboard/TopMentionsCard";
+import ShareOfVoiceCard from "@/components/dashboard/ShareOfVoiceCard";
+import TotalMentionsCard from "@/components/dashboard/TotalMentionsCard";
+import BrandInfoCard from "@/components/dashboard/BrandInfoCard";
+import AIEngineCard from "@/components/dashboard/AIEngineCard";
+import ActionPlanCard from "@/components/dashboard/ActionPlanCard";
+import SemanticAnalysisCard from "@/components/dashboard/SemanticAnalysisCard";
+import CompetitorIntelligenceCard from "@/components/dashboard/CompetitorIntelligenceCard";
+import CoachGEOvanniCard from "@/components/dashboard/CoachGEOvanniCard";
 import EmptyState from "@/components/dashboard/EmptyState";
-import ChatCoach from "@/components/dashboard/ChatCoach";
-import RecentActivity from "@/components/profile/RecentActivity";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WizardModal } from "@/components/wizard/WizardModal";
 
@@ -37,6 +38,7 @@ const Dashboard = () => {
   const [brand, setBrand] = useState<Brand | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [mentionedEngines, setMentionedEngines] = useState<string[]>([]);
+  const [engineScores, setEngineScores] = useState<Record<string, { score: number; status: string }>>({});
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [searchParams] = useSearchParams();
@@ -210,7 +212,7 @@ const Dashboard = () => {
       if (brandData) {
         const { data: analysesData, error: analysesError } = await supabase
           .from("analyses")
-          .select("ai_engine")
+          .select("ai_engine, points_earned, sentiment, mentioned")
           .eq("brand_id", brandData.id);
 
         if (analysesError) throw analysesError;
@@ -218,6 +220,22 @@ const Dashboard = () => {
         const engines = [...new Set(analysesData?.map((a) => a.ai_engine) || [])];
         setMentionedEngines(engines);
         setHasAnalysis(analysesData && analysesData.length > 0);
+
+        // Calculate per-engine scores
+        const scores: Record<string, { score: number; status: string }> = {};
+        engines.forEach(engine => {
+          const engineData = analysesData?.filter(a => a.ai_engine === engine) || [];
+          const avgScore = engineData.reduce((sum, a) => sum + (a.points_earned || 0), 0) / (engineData.length || 1);
+          const positiveSentiment = engineData.filter(a => a.sentiment === 'positive').length;
+          const negativeSentiment = engineData.filter(a => a.sentiment === 'negative').length;
+          
+          let status = "Sentiment Unknown";
+          if (positiveSentiment > negativeSentiment) status = "Sentiment Positive";
+          else if (negativeSentiment > 0) status = "Issues Found";
+          
+          scores[engine] = { score: Math.round(avgScore), status };
+        });
+        setEngineScores(scores);
 
         // Invalidate query to trigger refetch
         queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brandData.id] });
@@ -258,6 +276,23 @@ const Dashboard = () => {
   const isPro = profile?.plan === 'pro' || profile?.plan === 'business' || 
                 profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
 
+  // Calculate Share of Voice
+  const shareOfVoice = lastAnalysisRun?.score 
+    ? Math.round((lastAnalysisRun.mentions / (lastAnalysisRun.score / 5 || 1)) * 100) 
+    : 0;
+
+  // All 8 AI engines
+  const allEngines = [
+    { id: "chatgpt", name: "ChatGPT" },
+    { id: "claude", name: "Claude" },
+    { id: "gemini", name: "Gemini" },
+    { id: "perplexity", name: "Perplexity" },
+    { id: "deepseek", name: "DeepSeek" },
+    { id: "grok", name: "Grok" },
+    { id: "mistral", name: "Mistral" },
+    { id: "metaai", name: "Meta AI" }
+  ];
+
   return (
     <div className="min-h-screen bg-background pt-20">
       <DashboardHeader userEmail={user.email} userPlan={profile?.plan} />
@@ -266,50 +301,60 @@ const Dashboard = () => {
           <EmptyState onStartAnalysis={handleStartAnalysis} />
         ) : (
           <div className="space-y-6">
-            {/* First Row - Main Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* First Row - Hero Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <VisibilityScoreCard 
                 score={brand.visibility_score} 
                 lastRun={brand.last_run}
               />
-              <AIEngineBreakdownCard mentionedEngines={mentionedEngines} />
-              <AnalysisStatusCard 
-                hasAnalysis={hasAnalysis} 
-                isPro={isPro}
-                brandId={brand.id}
+              <ShareOfVoiceCard 
+                shareOfVoice={shareOfVoice}
+                change={0}
+              />
+              <TotalMentionsCard 
+                count={lastAnalysisRun?.mentions || 0}
+                growth={0}
+              />
+              <BrandInfoCard 
                 brandName={brand.name}
                 topic={brand.topic}
-                userId={user?.id}
-                onAnalysisStarted={() => {
-              queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
-            }}
-            lastRunDate={lastAnalysisRun?.date}
-            lastRunScore={lastAnalysisRun?.score}
-            lastRunMentions={lastAnalysisRun?.mentions}
-            completionPercentage={lastAnalysisRun?.completionPercentage}
-            analysisStatus={lastAnalysisRun?.status}
               />
             </div>
 
-            {/* Second Row - Competitors and Quick Win */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2">
-                <CompetitorSnapshotCard isPro={isPro} />
+            {/* Second Row - AI Engine Breakdown (4x2 grid) */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">AI Engine Performance</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {allEngines.map((engine) => {
+                  const hasData = mentionedEngines.includes(engine.id);
+                  const engineData = engineScores[engine.id];
+                  return (
+                    <AIEngineCard
+                      key={engine.id}
+                      name={engine.name}
+                      score={engineData?.score}
+                      status={engineData?.status}
+                      hasData={hasData}
+                    />
+                  );
+                })}
               </div>
-              <QuickWinsCard topic={brand.topic} />
             </div>
 
-            {/* Third Row - Top Mentions */}
-            <TopMentionsCard isPro={isPro} />
-
-            {/* Fourth Row - Recent Activity */}
-            {user && <RecentActivity userId={user.id} />}
+            {/* Third Row - Bottom Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-1">
+                <CompetitorIntelligenceCard isPro={isPro} />
+              </div>
+              <div className="lg:col-span-2">
+                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
+              </div>
+              <div className="lg:col-span-1 space-y-6">
+                <ActionPlanCard />
+                <SemanticAnalysisCard />
+              </div>
+            </div>
           </div>
-        )}
-        
-        {/* AI Coach Chatbot */}
-        {brand && profile && (
-          <ChatCoach brandId={brand.id} userPlan={profile.plan} />
         )}
       </main>
       <WizardModal 
