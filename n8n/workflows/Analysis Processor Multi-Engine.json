@@ -502,8 +502,8 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        3184,
-        720
+        3648,
+        704
       ]
     },
     {
@@ -548,14 +548,14 @@
     },
     {
       "parameters": {
-        "content": "## Always Return, Never Throw\n**because it is a subworkflow\n\n## Multi-Engine Support\nThis workflow supports: perplexity, chatgpt, claude\nPass ai_engine parameter when calling",
-        "height": 280,
+        "content": "## Always Return, Never Throw\n**because it is a subworkflow\n\n## Multi-Engine Support\nThis workflow supports: perplexity, chatgpt, claude\nPass ai_engine parameter when calling\n\n## Todo\n**Enhance the flow to support analysis using:\n\nChatGPT\nClaude\nGemini\nPerplexity\nDeepSeek\nGrok\nMistral\nMeta AI",
+        "height": 488,
         "width": 740
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        48,
-        -192
+        160,
+        -288
       ],
       "typeVersion": 1,
       "id": "06ac1017-4a5d-4c35-b6d5-010823f15781",
@@ -745,8 +745,8 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        3632,
-        256
+        3648,
+        272
       ],
       "id": "5dae250a-7d0c-4221-9c57-52b80be63ad7",
       "name": "Return Response"
@@ -855,6 +855,91 @@
       ],
       "id": "886ed3ff-c456-4c24-9a4c-6dc338f2030d",
       "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "4FjZbeoyJRGgoymL",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/4FjZbeoyJRGgoymL",
+          "cachedResultName": "Analysis Aggregator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "runId": "={{ $('Config').first().json.runId }}",
+            "brandId": "={{ $('Config').first().json.brandId }}",
+            "brandName": "={{ $('Config').first().json.brandName }}",
+            "topic": "={{ $('Config').first().json.topic }}",
+            "userId": "={{ $('Config').first().json.userId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "runId",
+              "displayName": "runId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "brandId",
+              "displayName": "brandId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "brandName",
+              "displayName": "brandName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userId",
+              "displayName": "userId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        3296,
+        688
+      ],
+      "id": "2e1df1cd-3059-43b3-a06f-2dcdede047e4",
+      "name": "Call 'Analysis Aggregator'"
     }
   ],
   "pinData": {},
@@ -1048,7 +1133,7 @@
       "main": [
         [
           {
-            "node": "Loop Back",
+            "node": "Call 'Analysis Aggregator'",
             "type": "main",
             "index": 0
           }
@@ -1232,13 +1317,24 @@
           }
         ]
       ]
+    },
+    "Call 'Analysis Aggregator'": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "c5feac06-b1c2-488b-9176-c18967d536ca",
+  "versionId": "0cf4ee16-fc52-48fb-ba5f-3db001e5057a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"

@@ -247,8 +247,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        720,
-        976
+        0,
+        720
       ],
       "id": "6544e410-230e-4d22-b513-9f8146c7cd80",
       "name": "Set Database Error Response"
@@ -264,22 +264,10 @@
               "type": "boolean"
             },
             {
-              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
-              "name": "data",
-              "value": "={{\n  {\n    runId: $('Config').first().json.runId,\n    message: $('Combine Results').first().json.success \n      ? 'Analysis completed successfully across all engines.' \n      : 'Analysis completed with partial success.',\n    brandId: $('Config').first().json.brandId,\n    brandName: $('Config').first().json.brandName,\n    weightedVisibilityScore: $('Combine Results').item.json.summary.weightedVisibilityScore,\n    processors: $('Combine Results').item.json.summary,\n    results: {\n      perplexity: $('Combine Results').item.json.data.perplexity,\n      chatgpt: $('Combine Results').item.json.data.chatgpt,\n      claude: $('Combine Results').item.json.data.claude\n    },\n    errors: $('Combine Results').item.json.partialSuccess ? $('Combine Results').item.json.errors : null\n  }\n}}",
-              "type": "object"
-            },
-            {
-              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
-              "name": "metadata",
-              "value": "={{ {\n  executionId: $execution.id,\n  workflowName: $workflow.name,\n  processors: $('Combine Results').item.json.metadata\n} }}",
-              "type": "object"
-            },
-            {
-              "id": "d51c0918-abcb-40b9-9a40-63a269af806c",
-              "name": "partialSuccess",
-              "value": "={{ $('Combine Results').item.json.partialSuccess }}",
-              "type": "boolean"
+              "id": "d8735745-666f-417c-8c97-8c045678d1bb",
+              "name": "Analysis started for 3 engines. Results will be aggregated asynchronously.",
+              "value": "",
+              "type": "string"
             }
           ]
         },
@@ -288,52 +276,11 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1616,
-        80
+        0,
+        560
       ],
       "id": "9adac8aa-dba6-4e4a-8006-fbaceda781a1",
       "name": "Set Success Response"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "77711223-45be-4379-972e-b1d5b5066406",
-              "name": "success",
-              "value": false,
-              "type": "boolean"
-            },
-            {
-              "id": "ca8468cc-1e33-46a5-979e-cb84c7d73974",
-              "name": "error",
-              "value": "={{\n  {\n    message: 'Analysis workflows failed',\n    code: $('Combine Results').item.json.success === false && $('Combine Results').item.json.partialSuccess === false ? 'ALL_PROCESSORS_FAILED' : 'PARTIAL_PROCESSOR_FAILURE',\n    timestamp: $now.toISO(),\n    isRetryable: true,\n    errors: {\n      perplexity: $('Combine Results').item.json.errors.perplexity,\n      chatgpt: $('Combine Results').item.json.errors.chatgpt\n    },\n    summary: $('Combine Results').item.json.summary\n  }\n}}",
-              "type": "object"
-            },
-            {
-              "id": "fe43d221-9f0e-4fb9-b704-6248467a837b",
-              "name": "metadata",
-              "value": "={{\n  {\n    executionId: $execution.id,\n    workflowName: $workflow.name,\n    processors: $('Combine Results').item.json.metadata\n  }\n}}",
-              "type": "object"
-            },
-            {
-              "id": "1c074f7f-1496-40f6-9517-0264f19d964a",
-              "name": "=data",
-              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"subworkflowMetadata\": $('Combine Results').item.json.metadata\n  }\n}}",
-              "type": "object"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1632,
-        688
-      ],
-      "id": "4ffe0edf-2f03-4f6a-9a46-102dc23c43f4",
-      "name": "Set Subworkflow Error Response"
     },
     {
       "parameters": {
@@ -415,7 +362,7 @@
           "convertFieldsToString": true
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
       "id": "c1585422-e274-4f50-966a-bd88a4bd3e97",
@@ -428,54 +375,6 @@
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "// --- Helpers -------------------------------------------------------------\n\nfunction getNodeItem(nodeName) {\n  const arr = $items(nodeName);\n  return (arr && arr.length > 0) ? arr[0].json : null;\n}\n\n// Normalize engine result from sub-workflow\nfunction normalizeEngine(result, engineKey) {\n  if (!result) return null;\n\n  const success  = result.success === true;\n  const data     = result.data || null;\n  const error    = result.error || null;\n  const metadata = result.metadata || null;\n\n  const visibilityScore =\n    result.weightedVisibilityScore ??\n    (data ? data.visibilityScore : null);\n\n  const totalMentions =\n    data && typeof data.totalMentions === 'number'\n      ? data.totalMentions\n      : 0;\n\n  return {\n    engine: engineKey,\n    success,\n    error,\n    metadata,\n    visibilityScore,\n    totalMentions,\n    data,\n  };\n}\n\n// Build weights map from Supabase -> Collapse Weights\nfunction getEngineWeights() {\n  const weightsItem = getNodeItem('Collapse Weights'); // { engines: [...] }\n  const engineWeights = {};\n\n  if (weightsItem && Array.isArray(weightsItem.engines)) {\n    for (const row of weightsItem.engines) {\n      // Expect columns like engine_key, weight, trend_value ...\n      let key = row.engine_key || row.engineKey || row.engine || null;\n      if (!key) continue;\n\n      // Normalise keys so others can use simple names: \"claude\", \"perplexity\"\n      key = key.replace(/_ai$/i, '');\n\n      const w =\n        typeof row.weight === 'number'\n          ? row.weight\n          : typeof row.trend_value === 'number'\n          ? row.trend_value\n          : 1;\n\n      engineWeights[key] = w;\n    }\n  }\n\n  return engineWeights;\n}\n\n// --- Collect inputs ------------------------------------------------------\n\n// Results from sub-workflows\nconst chatgptResult    = getNodeItem('Process ChatGPT');\nconst claudeResult     = getNodeItem('Process Claude');\nconst perplexityResult = getNodeItem('Process Perplexity');\n\nconst chatgpt    = normalizeEngine(chatgptResult, 'chatgpt');\nconst claude     = normalizeEngine(claudeResult, 'claude');\nconst perplexity = normalizeEngine(perplexityResult, 'perplexity');\n\nconst engines = { chatgpt, claude, perplexity };\n\n// Weights\nconst engineWeights = getEngineWeights();\n\n// --- Aggregations --------------------------------------------------------\n\nfunction statusOf(engine) {\n  if (!engine) return 'missing';\n  return engine.success ? 'completed' : 'failed';\n}\n\nlet weightedVisibilityScore = 0;\nlet totalWeightUsed = 0;\nlet totalMentions = 0;\n\nconst mentionsByEngine = {};\n\nfor (const [key, eng] of Object.entries(engines)) {\n  if (!eng || !eng.success) continue;\n\n  const w = engineWeights[key] ?? 1;\n  const score = eng.visibilityScore ?? 0;\n\n  weightedVisibilityScore += score * w;\n  totalWeightUsed += w;\n\n  totalMentions += eng.totalMentions || 0;\n  mentionsByEngine[key] = eng.totalMentions || 0;\n}\n\nif (totalWeightUsed > 0) {\n  weightedVisibilityScore = weightedVisibilityScore / totalWeightUsed;\n} else {\n  weightedVisibilityScore = 0;\n}\n\n// Success / partial success flags\nconst availableEngines = Object.values(engines).filter(e => e !== null);\nconst successfulEngines = availableEngines.filter(e => e.success);\n\nconst successfulProcessors = successfulEngines.length;\nconst totalProcessors = availableEngines.length;\n\nconst success = successfulProcessors > 0;\nconst partialSuccess = success && successfulProcessors < totalProcessors;\n\n// --- Final output --------------------------------------------------------\n\nreturn [\n  {\n    json: {\n      success,\n      partialSuccess,\n      data: {\n        chatgpt:    chatgpt    ? chatgpt.data    : null,\n        claude:     claude     ? claude.data     : null,\n        perplexity: perplexity ? perplexity.data : null,\n\n        weightedScore: weightedVisibilityScore,\n        scoresUsed: totalWeightUsed,\n        engineWeightsUsed: engineWeights,\n\n        // NEW AGGREGATES\n        totalMentions,\n        mentionsByEngine,\n      },\n      errors: {\n        chatgpt:    chatgpt    ? chatgpt.error    : null,\n        claude:     claude     ? claude.error     : null,\n        perplexity: perplexity ? perplexity.error : null,\n      },\n      weightedVisibilityScore,\n      summary: {\n        chatgptStatus:    statusOf(chatgpt),\n        claudeStatus:     statusOf(claude),\n        perplexityStatus: statusOf(perplexity),\n        totalProcessors,\n        successfulProcessors,\n        // expose again for convenience\n        weightedVisibilityScore,\n        totalMentions,\n      },\n      metadata: {\n        chatgpt:    chatgpt    ? chatgpt.metadata    : null,\n        claude:     claude     ? claude.metadata     : null,\n        perplexity: perplexity ? perplexity.metadata : null,\n      },\n    },\n  },\n];\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        736,
-        352
-      ],
-      "id": "a2ebe747-a8f0-43bb-9adf-274ec57e4ca6",
-      "name": "Combine Results"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "da9aa696-9e82-4ecf-a020-04f85731958e",
-              "leftValue": "={{ $('Combine Results').item.json.success === true || $('Combine Results').item.json.partialSuccess === true }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "looseTypeValidation": true,
-        "options": {}
-      },
-      "id": "f55915ff-d935-4dab-95e1-f6c83027b9df",
-      "name": "Check Processor Success",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1280,
-        336
-      ]
     },
     {
       "parameters": {
@@ -557,7 +456,7 @@
           "convertFieldsToString": true
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
       "id": "ecd4a4c7-c714-445e-873e-a627c7473141",
@@ -651,7 +550,7 @@
           "convertFieldsToString": true
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
       "id": "b62d49cf-9c44-48ec-b2c0-6fa0f1ed2ed9",
@@ -666,51 +565,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "ai_engine_weights_latest",
-        "returnAll": true,
-        "filterType": "string"
-      },
-      "id": "c8156e12-abf6-468e-abb2-85fed0df1e4e",
-      "name": "Get Engine Weights",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        0,
-        560
-      ],
-      "alwaysOutputData": false,
-      "retryOnFail": true,
-      "maxTries": 2,
-      "credentials": {
-        "supabaseApi": {
-          "id": "xjyTBcrvj3X5rWEu",
-          "name": "Supabase account"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = $input.all();\n\n// flatten into one array\nconst engines = items.map(i => i.json);\n\n// return a single item\nreturn [\n  {\n    json: {\n      engines\n    }\n  }\n];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        528,
-        352
-      ],
-      "id": "8f9a2638-a8f6-4bf5-8823-ddbbe729d232",
-      "name": "Collapse Weights"
-    },
-    {
       "parameters": {},
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        2000,
-        384
+        416,
+        752
       ],
       "id": "edea0258-2717-42ca-ae26-79509483809e",
       "name": "Exit",
@@ -732,69 +592,16 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "analysis_runs",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "run_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Config').first().json.runId }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "status",
-              "fieldValue": "completed"
-            },
-            {
-              "fieldId": "progress",
-              "fieldValue": "100"
-            },
-            {
-              "fieldId": "visibility_score",
-              "fieldValue": "={{ $json.weightedVisibilityScore }}"
-            },
-            {
-              "fieldId": "total_mentions",
-              "fieldValue": "={{ $json.data.totalMentions ?? $json.summary.totalMentions ?? 0 }}"
-            }
-          ]
-        }
+        "content": "## Todo\n**Enhance the flow to trigger analysis in:\n\nChatGPT\nClaude\nGemini\nPerplexity\nDeepSeek\nGrok\nMistral\nMeta AI"
       },
-      "id": "59c1a7db-4264-4c89-a889-547fb9f954f2",
-      "name": "Update Run Aggregates",
-      "type": "n8n-nodes-base.supabase",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        352,
+        16
+      ],
       "typeVersion": 1,
-      "position": [
-        976,
-        352
-      ],
-      "alwaysOutputData": true,
-      "retryOnFail": true,
-      "maxTries": 3,
-      "credentials": {
-        "supabaseApi": {
-          "id": "xjyTBcrvj3X5rWEu",
-          "name": "Supabase account"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "numberInputs": 4
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        304,
-        320
-      ],
-      "id": "dad42d87-122a-4e15-bad2-7e26627211ea",
-      "name": "Merge"
+      "id": "686ae590-af9a-426e-88d9-68513332c218",
+      "name": "Sticky Note"
     }
   ],
   "pinData": {},
@@ -840,7 +647,7 @@
             "index": 0
           },
           {
-            "node": "Get Engine Weights",
+            "node": "Set Success Response",
             "type": "main",
             "index": 0
           }
@@ -883,17 +690,6 @@
         ]
       ]
     },
-    "Set Subworkflow Error Response": {
-      "main": [
-        [
-          {
-            "node": "Exit",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Set Database Error Response": {
       "main": [
         [
@@ -918,93 +714,17 @@
     },
     "Process ChatGPT": {
       "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Processor Success": {
-      "main": [
-        [
-          {
-            "node": "Set Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Set Subworkflow Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Combine Results": {
-      "main": [
-        [
-          {
-            "node": "Update Run Aggregates",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Process Perplexity": {
       "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
+        []
       ]
     },
     "Process Claude": {
       "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "Get Engine Weights": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 3
-          }
-        ],
-        [
-          {
-            "node": "Set Database Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Collapse Weights": {
-      "main": [
-        [
-          {
-            "node": "Combine Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "When Executed by Another Workflow": {
@@ -1017,42 +737,13 @@
           }
         ]
       ]
-    },
-    "Update Run Aggregates": {
-      "main": [
-        [
-          {
-            "node": "Check Processor Success",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Set Subworkflow Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Collapse Weights",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f810c169-e721-4234-a43d-b7122660bab8",
+  "versionId": "cfef8529-459d-45bc-9539-67bfd9884a5c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"

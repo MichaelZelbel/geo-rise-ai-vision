@@ -1,0 +1,534 @@
+{
+  "name": "Analysis Aggregator",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId || ('run_' + Date.now() + '_' + ($json.brandId || 'test2')) }}"
+            },
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $json.brandId || 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $json.brandName || 'Test Brand' }}"
+            },
+            {
+              "id": "config-topic",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json.topic || 'AI automation' }}"
+            },
+            {
+              "id": "config-user-id",
+              "name": "userId",
+              "type": "string",
+              "value": "={{ $json.userId || '7f078493-f4de-491b-8156-6f7f8f425936' }}"
+            },
+            {
+              "id": "config-timestamp",
+              "name": "timestamp",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "84367cb0-b7f3-49c9-bc06-d6215f40a6cf",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "validate-run-id",
+              "leftValue": "={{ $('Config').item.json.runId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        208
+      ],
+      "id": "60d3971a-e639-4f20-8ae0-26f1744c18fd",
+      "name": "Validate Run ID"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "analyses",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').item.json.runId }}"
+      },
+      "id": "49c3c471-cd52-48c4-94a9-ce154a372fd8",
+      "name": "Fetch Engine Results",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        208
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xjyTBcrvj3X5rWEu",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ai_engine_weights_latest",
+        "returnAll": true
+      },
+      "id": "b5a75cff-f5a2-4b65-8f72-b5b6fe18c6fd",
+      "name": "Fetch Engine Weights",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        208
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xjyTBcrvj3X5rWEu",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all analyses and weights\nconst analyses = $('Fetch Engine Results').all();\nconst weights = $('Fetch Engine Weights').all();\n\n// Normalize engine keys (remove _ai suffix)\nconst engineWeights = {};\nfor (const w of weights) {\n  let engineKey = w.json.engine_key || '';\n  if (engineKey.endsWith('_ai')) {\n    engineKey = engineKey.replace('_ai', '');\n  }\n  engineWeights[engineKey] = w.json.weight || 0;\n}\n\n// Max possible score per engine\nconst MAX_SCORE_PER_ENGINE = 38;\nconst EXPECTED_QUERIES_PER_ENGINE = 6;\n\n// Initialize engine aggregates\nconst engines = {\n  chatgpt: {\n    totalScore: 0,\n    count: 0,\n    totalMentions: 0,\n    visibilityScore: 0,\n    weight: engineWeights.chatgpt || 0\n  },\n  claude: {\n    totalScore: 0,\n    count: 0,\n    totalMentions: 0,\n    visibilityScore: 0,\n    weight: engineWeights.claude || 0\n  },\n  perplexity: {\n    totalScore: 0,\n    count: 0,\n    totalMentions: 0,\n    visibilityScore: 0,\n    weight: engineWeights.perplexity || 0\n  }\n};\n\n// Aggregate results per engine - USE CORRECT FIELD NAMES!\nfor (const analysis of analyses) {\n  const aiEngine = analysis.json.ai_engine;\n  const pointsEarned = analysis.json.points_earned || 0;\n  const isMentioned = analysis.json.mentioned ? 1 : 0;\n\n  if (engines[aiEngine]) {\n    engines[aiEngine].totalScore += pointsEarned;\n    engines[aiEngine].count += 1;\n    engines[aiEngine].totalMentions += isMentioned;\n  }\n}\n\n// Calculate visibility scores (0-100) per engine\nlet totalMentions = 0;\nfor (const engineKey in engines) {\n  const engine = engines[engineKey];\n  if (engine.count > 0) {\n    engine.visibilityScore = (engine.totalScore / MAX_SCORE_PER_ENGINE) * 100;\n  }\n  totalMentions += engine.totalMentions;\n}\n\n// Calculate weighted visibility score\nlet weightedVisibilityScore = 0;\nlet totalWeight = 0;\n\nfor (const engineKey in engines) {\n  const engine = engines[engineKey];\n  if (engine.count > 0 && engine.weight > 0) {\n    weightedVisibilityScore += engine.visibilityScore * engine.weight;\n    totalWeight += engine.weight;\n  }\n}\n\n// Fallback if no weights\nif (totalWeight === 0 && analyses.length > 0) {\n  const activeEngines = Object.keys(engines).filter(k => engines[k].count > 0);\n  if (activeEngines.length > 0) {\n    const equalWeight = 1 / activeEngines.length;\n    for (const engineKey of activeEngines) {\n      weightedVisibilityScore += engines[engineKey].visibilityScore * equalWeight;\n    }\n  }\n}\n\n// Determine completion\nconst expectedEngines = ['chatgpt', 'claude', 'perplexity'];\nconst enginesWithData = expectedEngines.filter(engineKey => engines[engineKey].count > 0);\nconst allEnginesDone = expectedEngines.every(engineKey => \n  engines[engineKey].count >= EXPECTED_QUERIES_PER_ENGINE\n);\n\n// Calculate completion percentage\nconst totalExpectedQueries = EXPECTED_QUERIES_PER_ENGINE * expectedEngines.length;\nconst totalCompletedQueries = Object.values(engines).reduce((sum, e) => sum + e.count, 0);\nconst completionPercentage = totalExpectedQueries > 0\n  ? Math.round((totalCompletedQueries / totalExpectedQueries) * 100)\n  : 0;\n\nreturn [\n  {\n    json: {\n      success: true,\n      weightedVisibilityScore: Math.round(weightedVisibilityScore * 100) / 100,\n      totalMentions,\n      engines,\n      enginesWithData,\n      expectedEngines,\n      allEnginesDone,\n      completionPercentage\n    }\n  }\n];"
+      },
+      "id": "bb277063-37de-450f-b836-fe6172ceba39",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "analysis_runs",
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').first().json.runId }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "visibility_score",
+              "fieldValue": "={{ $json.weightedVisibilityScore }}"
+            },
+            {
+              "fieldId": "total_mentions",
+              "fieldValue": "={{ $json.totalMentions }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.allEnginesDone ? 'completed' : 'processing' }}"
+            },
+            {
+              "fieldId": "completed_at",
+              "fieldValue": "={{ $json.allEnginesDone ? $now.toISO() : null }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "completion_percentage",
+              "fieldValue": "={{ $json.completionPercentage }}"
+            }
+          ]
+        }
+      },
+      "id": "62302c97-e5ca-4804-9589-3cb2c397d7b9",
+      "name": "Update Analysis Run",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        208
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "supabaseApi": {
+          "id": "xjyTBcrvj3X5rWEu",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success-flag",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "success-data",
+              "name": "data",
+              "value": "={{\n  {\n    runId: $('Config').first().json.runId,\n    brandId: $('Config').first().json.brandId,\n    brandName: $('Config').first().json.brandName,\n    topic: $('Config').first().json.topic,\n    weightedVisibilityScore: $('Aggregate Results').item.json.weightedVisibilityScore,\n    totalMentions: $('Aggregate Results').item.json.totalMentions,\n    engines: $('Aggregate Results').item.json.engines,\n    message: 'Analysis aggregation completed successfully'\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "success-metadata",
+              "name": "metadata",
+              "value": "={{\n  {\n    executionId: $execution.id,\n    workflowName: $workflow.name,\n    timestamp: $now.toISO()\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        208
+      ],
+      "id": "30e27ed2-e65d-4598-9dda-b0ac2c06e2c1",
+      "name": "Set Success Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-flag",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "error-data",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Missing required parameter: runId\",\n    \"code\": \"VALIDATION_ERROR\",\n    \"node\": \"Validate Run ID\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": false\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "error-metadata",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1200,
+        416
+      ],
+      "id": "138ddbb0-e686-4b6b-a870-466021235be0",
+      "name": "Set Validation Error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "db-error-flag",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "db-error-data",
+              "name": "error",
+              "value": "={{\n  {\n    \"message\": \"Failed to fetch engine results or update analysis run\",\n    \"code\": \"DATABASE_ERROR\",\n    \"node\": \"Fetch Engine Results / Update Analysis Run\",\n    \"timestamp\": $now.toISO(),\n    \"isRetryable\": true,\n    \"details\": $json.error\n  }\n}}",
+              "type": "object"
+            },
+            {
+              "id": "db-error-metadata",
+              "name": "metadata",
+              "value": "={{\n  {\n    \"executionId\": $execution.id,\n    \"workflowName\": $workflow.name,\n    \"runId\": $('Config').item.json.runId\n  }\n}}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1920,
+        416
+      ],
+      "id": "f192a5f1-1305-434a-a56a-9057f6139554",
+      "name": "Set Database Error"
+    },
+    {
+      "parameters": {},
+      "id": "c7be0dc9-d321-4507-8536-ba809aee186f",
+      "name": "No Op",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "625ec95c-f46c-41b1-8650-932b69aaa557",
+      "name": "Manual Trigger for Testing",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        480,
+        416
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "runId"
+            },
+            {
+              "name": "brandId"
+            },
+            {
+              "name": "brandName"
+            },
+            {
+              "name": "topic"
+            },
+            {
+              "name": "userId"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        208
+      ],
+      "id": "b883bb61-075d-429d-b709-3223816ade88",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Validate Run ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Run ID": {
+      "main": [
+        [
+          {
+            "node": "Fetch Engine Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Engine Results": {
+      "main": [
+        [
+          {
+            "node": "Fetch Engine Weights",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Engine Weights": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Update Analysis Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Analysis Run": {
+      "main": [
+        [
+          {
+            "node": "Set Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Database Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Success Response": {
+      "main": [
+        [
+          {
+            "node": "No Op",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Validation Error": {
+      "main": [
+        [
+          {
+            "node": "No Op",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Database Error": {
+      "main": [
+        [
+          {
+            "node": "No Op",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "889f9136-e90f-4fe1-b8ed-8cfae0bc6cf1",
+  "meta": {
+    "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
+  },
+  "id": "4FjZbeoyJRGgoymL",
+  "tags": []
+}
