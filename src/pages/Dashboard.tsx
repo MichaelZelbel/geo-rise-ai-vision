@@ -343,7 +343,7 @@ const Dashboard = () => {
               </div>
               
               {/* Right Column - Coach GEOvanni */}
-              <div className="flex-1 flex">
+              <div className="flex-1 flex flex-col">
                 <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
               </div>
             </div>
