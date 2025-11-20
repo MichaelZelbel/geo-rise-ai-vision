@@ -51,7 +51,7 @@ const TestLayout = () => {
             isAnalysisRunning={false}
             analysisStatus="completed"
             analysisProgress={100}
-            onAnalysisStarted={(runId) => {}}
+            onAnalysisStarted={(runId) => { }}
           />
 
           {/* Second Row - AI Engine Breakdown (4x2 grid) */}
@@ -79,10 +79,10 @@ const TestLayout = () => {
               <ActionPlanCard />
               <SemanticAnalysisCard />
             </div>
-            
+
             {/* Right Column - Coach GEOvanni */}
-            <div className="flex-1 flex flex-col">
-              <CoachGEOvanniCard brandId="test-brand-id" userPlan="pro" />
+            <div className="flex-1 flex flex-col h-full">
+              <CoachGEOvanniCard brandId="test-brand-id" userPlan="pro" className="h-full" />
             </div>
           </div>
         </div>

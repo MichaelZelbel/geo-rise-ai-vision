@@ -14,12 +14,15 @@ interface Message {
   timestamp: Date;
 }
 
+import { cn } from "@/lib/utils";
+
 interface CoachGEOvanniCardProps {
   brandId: string;
   userPlan: string;
+  className?: string;
 }
 
-const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
+const CoachGEOvanniCard = ({ brandId, userPlan, className }: CoachGEOvanniCardProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -233,7 +236,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   if (!isPro) {
     return (
-      <div className="bg-card rounded-xl p-6 border border-border shadow-sm h-full flex flex-col">
+      <div className={cn("bg-card rounded-xl p-6 border border-border shadow-sm h-full flex flex-col", className)}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
@@ -261,7 +264,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   return (
     <>
-      <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col h-full min-h-0">
+      <div className={cn("bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col h-full min-h-0", className)}>
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />

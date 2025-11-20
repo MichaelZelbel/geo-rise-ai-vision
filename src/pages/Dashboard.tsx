@@ -47,7 +47,7 @@ const Dashboard = () => {
     queryKey: ["latest-analysis-run", brand?.id],
     queryFn: async () => {
       if (!brand?.id) return null;
-      
+
       const { data: latestRun } = await supabase
         .from("analysis_runs")
         .select("*")
@@ -88,10 +88,10 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         loadDashboardData(session.user.id);
-        
+
         // Create brand if we have the data from wizard
         if (topicParam && brandParam) {
           createBrand(session.user.id, brandParam, topicParam);
@@ -141,16 +141,16 @@ const Dashboard = () => {
       }).select().single();
 
       if (error) throw error;
-      
+
       toast.success("Brand created successfully!");
-      
+
       // Clear URL params
       navigate("/dashboard", { replace: true });
-      
+
       // Trigger analysis in background
       if (newBrand) {
         toast.info("Starting AI visibility analysis...");
-        
+
         supabase.functions
           .invoke('run-analysis', {
             body: {
@@ -175,7 +175,7 @@ const Dashboard = () => {
             toast.error(err?.message || "Failed to send request to analysis function.");
           });
       }
-      
+
       loadDashboardData(userId);
     } catch (err) {
       console.error("Error creating brand:", err);
@@ -225,11 +225,11 @@ const Dashboard = () => {
           const avgScore = engineData.reduce((sum, a) => sum + (a.points_earned || 0), 0) / (engineData.length || 1);
           const positiveSentiment = engineData.filter(a => a.sentiment === 'positive').length;
           const negativeSentiment = engineData.filter(a => a.sentiment === 'negative').length;
-          
+
           let status = "Sentiment Unknown";
           if (positiveSentiment > negativeSentiment) status = "Sentiment Positive";
           else if (negativeSentiment > 0) status = "Issues Found";
-          
+
           scores[engine] = { score: Math.round(avgScore), status };
         });
         setEngineScores(scores);
@@ -270,12 +270,12 @@ const Dashboard = () => {
     return null;
   }
 
-  const isPro = profile?.plan === 'pro' || profile?.plan === 'business' || 
-                profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'business' ||
+    profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
 
   // Calculate Share of Voice
-  const shareOfVoice = lastAnalysisRun?.score 
-    ? Math.round((lastAnalysisRun.mentions / (lastAnalysisRun.score / 5 || 1)) * 100) 
+  const shareOfVoice = lastAnalysisRun?.score
+    ? Math.round((lastAnalysisRun.mentions / (lastAnalysisRun.score / 5 || 1)) * 100)
     : 0;
 
   // All 8 AI engines
@@ -341,18 +341,18 @@ const Dashboard = () => {
                 <ActionPlanCard />
                 <SemanticAnalysisCard />
               </div>
-              
+
               {/* Right Column - Coach GEOvanni */}
-              <div className="flex-1 flex flex-col">
-                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
+              <div className="flex-1 flex flex-col h-full">
+                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} className="h-full" />
               </div>
             </div>
           </div>
         )}
       </main>
-      <WizardModal 
-        open={showWizard} 
-        onOpenChange={setShowWizard} 
+      <WizardModal
+        open={showWizard}
+        onOpenChange={setShowWizard}
       />
     </div>
   );
