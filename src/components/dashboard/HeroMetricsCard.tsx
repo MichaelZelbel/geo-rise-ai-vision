@@ -102,24 +102,28 @@ const HeroMetricsCard = ({
         <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
           <p className="text-sm text-muted-foreground mb-2">Share of Voice</p>
           <div className="flex items-center gap-4">
-            <PieChart width={80} height={80}>
-              <Pie
-                data={shareOfVoiceData}
-                cx={40}
-                cy={40}
-                innerRadius={25}
-                outerRadius={35}
-                startAngle={90}
-                endAngle={-270}
-                dataKey="value"
-              >
-                {shareOfVoiceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Pie>
-            </PieChart>
+            <div className="relative flex items-center justify-center">
+              <PieChart width={80} height={80}>
+                <Pie
+                  data={shareOfVoiceData}
+                  cx={40}
+                  cy={40}
+                  innerRadius={25}
+                  outerRadius={35}
+                  startAngle={90}
+                  endAngle={-270}
+                  dataKey="value"
+                >
+                  {shareOfVoiceData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="text-xl font-bold text-primary">{shareOfVoice}%</div>
+              </div>
+            </div>
             <div>
-              <div className="text-3xl font-bold text-primary">{shareOfVoice}%</div>
               <p className="text-xs text-muted-foreground">of search results</p>
             </div>
           </div>
@@ -129,24 +133,28 @@ const HeroMetricsCard = ({
         <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
           <p className="text-sm text-muted-foreground mb-2">Total Mentions</p>
           <div className="flex items-center gap-4">
-            <PieChart width={80} height={80}>
-              <Pie
-                data={mentionsData}
-                cx={40}
-                cy={40}
-                innerRadius={25}
-                outerRadius={35}
-                startAngle={90}
-                endAngle={-270}
-                dataKey="value"
-              >
-                {mentionsData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Pie>
-            </PieChart>
+            <div className="relative flex items-center justify-center">
+              <PieChart width={80} height={80}>
+                <Pie
+                  data={mentionsData}
+                  cx={40}
+                  cy={40}
+                  innerRadius={25}
+                  outerRadius={35}
+                  startAngle={90}
+                  endAngle={-270}
+                  dataKey="value"
+                >
+                  {mentionsData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="text-xl font-bold text-accent">{totalMentions}</div>
+              </div>
+            </div>
             <div>
-              <div className="text-3xl font-bold text-accent">{totalMentions}</div>
               <p className="text-xs text-muted-foreground">times featured</p>
             </div>
           </div>
@@ -237,7 +245,7 @@ const HeroMetricsCard = ({
         {/* Section 2: Share of Voice with circular chart */}
         <div className="p-6 flex flex-col items-center justify-center">
           <h3 className="text-lg font-semibold text-card-foreground mb-3">Share of Voice</h3>
-          <div className="relative">
+          <div className="relative flex items-center justify-center">
             <PieChart width={120} height={120}>
               <Pie
                 data={shareOfVoiceData}
@@ -254,10 +262,8 @@ const HeroMetricsCard = ({
                 ))}
               </Pie>
             </PieChart>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{shareOfVoice}%</div>
-              </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="text-2xl font-bold text-primary">{shareOfVoice}%</div>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">of search results</p>
@@ -266,7 +272,7 @@ const HeroMetricsCard = ({
         {/* Section 3: Total Mentions with circular chart */}
         <div className="p-6 flex flex-col items-center justify-center">
           <h3 className="text-lg font-semibold text-card-foreground mb-3">Total Mentions</h3>
-          <div className="relative">
+          <div className="relative flex items-center justify-center">
             <PieChart width={120} height={120}>
               <Pie
                 data={mentionsData}
@@ -283,10 +289,8 @@ const HeroMetricsCard = ({
                 ))}
               </Pie>
             </PieChart>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-accent">{totalMentions}</div>
-              </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="text-2xl font-bold text-accent">{totalMentions}</div>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">times featured</p>
