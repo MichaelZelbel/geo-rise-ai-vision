@@ -70,6 +70,7 @@ const Dashboard = () => {
         score: currentScore,
         scoreTrend: scoreTrend,
         mentions: latestRun.total_mentions || 0,
+        totalQueries: latestRun.total_queries || 20,
         completionPercentage: latestRun.completion_percentage || 0,
         status: latestRun.status,
       };
@@ -284,9 +285,9 @@ const Dashboard = () => {
   const isPro = profile?.plan === 'pro' || profile?.plan === 'business' ||
     profile?.plan === 'giftedPro' || profile?.plan === 'giftedAgency';
 
-  // Calculate Share of Voice
-  const shareOfVoice = lastAnalysisRun?.score
-    ? Math.round((lastAnalysisRun.mentions / (lastAnalysisRun.score / 5 || 1)) * 100)
+  // Calculate Share of Voice (percentage of queries where brand was mentioned)
+  const shareOfVoice = lastAnalysisRun?.totalQueries
+    ? Math.round((lastAnalysisRun.mentions / lastAnalysisRun.totalQueries) * 100)
     : 0;
 
   // All 8 AI engines
