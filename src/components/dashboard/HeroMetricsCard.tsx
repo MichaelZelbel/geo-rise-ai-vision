@@ -2,6 +2,7 @@ import { TrendingUp } from "lucide-react";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { Cell, PieChart, Pie } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Progress } from "@/components/ui/progress";
 
 interface HeroMetricsCardProps {
   visibilityScore: number;
@@ -134,6 +135,15 @@ const HeroMetricsCard = ({
               <p className="font-semibold text-foreground">{topic}</p>
             </div>
             <div className="pt-2">
+              {isAnalysisRunning && analysisProgress !== undefined && (
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Analyzing...</span>
+                    <span className="font-medium">{Math.round(analysisProgress)}%</span>
+                  </div>
+                  <Progress value={analysisProgress} className="h-2" />
+                </div>
+              )}
               <RunAnalysisButton
                 brandId={brandId}
                 brandName={brandName}
@@ -245,6 +255,15 @@ const HeroMetricsCard = ({
             </div>
           </div>
           <div className="mt-4">
+            {isAnalysisRunning && analysisProgress !== undefined && (
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Analyzing...</span>
+                  <span className="font-medium">{Math.round(analysisProgress)}%</span>
+                </div>
+                <Progress value={analysisProgress} className="h-2" />
+              </div>
+            )}
             <RunAnalysisButton
               brandId={brandId}
               brandName={brandName}

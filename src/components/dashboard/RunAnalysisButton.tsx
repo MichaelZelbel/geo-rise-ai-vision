@@ -109,12 +109,6 @@ export function RunAnalysisButton({
           </>
         )}
       </Button>
-      {isRunning && (
-        <p className="text-sm text-muted-foreground text-center">
-          10-minute coffee break for you! ☕<br />
-          You can safely close this page – we've got this!
-        </p>
-      )}
     </div>
   );
 }
