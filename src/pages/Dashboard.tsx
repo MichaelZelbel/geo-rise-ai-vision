@@ -300,7 +300,7 @@ const Dashboard = () => {
           <div className="space-y-6">
             {/* First Row - Unified Hero Metrics */}
             <HeroMetricsCard
-              visibilityScore={brand.visibility_score}
+              visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
               shareOfVoice={shareOfVoice}
               totalMentions={lastAnalysisRun?.mentions || 0}
               brandName={brand.name}
