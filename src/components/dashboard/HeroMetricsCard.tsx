@@ -168,7 +168,7 @@ const HeroMetricsCard = ({
       <div className="grid grid-cols-4 divide-x divide-border">
         {/* Section 1: Visibility Score */}
         <div className="p-6">
-          <p className="text-sm text-muted-foreground mb-1">GEO Visibility Score</p>
+          <h3 className="text-lg font-semibold text-card-foreground mb-1">GEO Visibility Score</h3>
           <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-2">
             {visibilityScore}
           </div>
