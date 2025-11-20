@@ -5,7 +5,6 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import ReportsOverview from "@/components/reports/ReportsOverview";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
 import AnalysisHistoryTable from "@/components/reports/AnalysisHistoryTable";
-import InsightsPanel from "@/components/reports/InsightsPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { BarChart3 } from "lucide-react";
@@ -27,7 +26,6 @@ const Reports = () => {
   const [userPlan, setUserPlan] = useState<string>("free");
   const [selectedBrand, setSelectedBrand] = useState<any>(null);
   const [analysisRuns, setAnalysisRuns] = useState<AnalysisRun[]>([]);
-  const [insights, setInsights] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -109,20 +107,6 @@ const Reports = () => {
       }));
 
       setAnalysisRuns(formattedRuns);
-
-      // Fetch insights for latest run
-      if (formattedRuns.length > 0) {
-        const { data: insightsData } = await supabase
-          .from("insights")
-          .select("*")
-          .eq("brand_id", brandId)
-          .order("created_at", { ascending: false })
-          .limit(10);
-
-        if (insightsData) {
-          setInsights(insightsData);
-        }
-      }
     } catch (error) {
       console.error("Error fetching analysis data:", error);
       setAnalysisRuns([]);
@@ -194,20 +178,12 @@ const Reports = () => {
           userPlan={userPlan}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          <div className="lg:col-span-2">
-            <AnalysisHistoryTable 
-              analysisRuns={analysisRuns}
-              userPlan={userPlan}
-              brandId={selectedBrand.id}
-            />
-          </div>
-          <div>
-            <InsightsPanel 
-              insights={insights}
-              userPlan={userPlan}
-            />
-          </div>
+        <div className="mt-8">
+          <AnalysisHistoryTable 
+            analysisRuns={analysisRuns}
+            userPlan={userPlan}
+            brandId={selectedBrand.id}
+          />
         </div>
       </main>
     </div>
