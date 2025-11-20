@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Bot, Send, Maximize2, Sparkles, Loader2 } from "lucide-react";
+import { Bot, Send, Maximize2, Minimize2, Sparkles, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Message {
@@ -23,6 +24,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -146,47 +148,8 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
     "What should I publish?",
   ];
 
-  if (!isPro) {
-    return (
-      <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Bot className="h-6 w-6 text-primary" />
-            <h3 className="text-lg font-semibold">Chat with Coach GEOvanni</h3>
-          </div>
-          <Maximize2 className="h-4 w-4 text-muted-foreground" />
-        </div>
-        
-        <div className="text-center py-6 space-y-4">
-          <div className="p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg">
-            <Sparkles className="h-12 w-12 mx-auto text-primary mb-2" />
-            <p className="font-medium">AI Optimization Coach</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Get personalized advice on improving your GEO
-            </p>
-          </div>
-          
-          <Button onClick={() => navigate("/pricing")} className="w-full">
-            Upgrade to Pro
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-card rounded-xl p-6 border border-border shadow-sm h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Bot className="h-6 w-6 text-primary" />
-          <div>
-            <h3 className="text-lg font-semibold">Chat with Coach GEOvanni</h3>
-            <p className="text-xs text-muted-foreground">Your AI visibility advisor</p>
-          </div>
-        </div>
-        <Maximize2 className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
-      </div>
-
+  const renderChatContent = () => (
+    <>
       <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="space-y-3">
@@ -263,7 +226,89 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
           {50 - messageCount} messages left today
         </p>
       </div>
-    </div>
+    </>
+  );
+
+  if (!isPro) {
+    return (
+      <div className="bg-card rounded-xl p-6 border border-border shadow-sm h-full flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-6 w-6 text-primary" />
+            <h3 className="text-lg font-semibold">Chat with Coach GEOvanni</h3>
+          </div>
+        </div>
+        
+        <div className="text-center py-6 space-y-4 flex-1 flex flex-col justify-center">
+          <div className="p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg">
+            <Sparkles className="h-12 w-12 mx-auto text-primary mb-2" />
+            <p className="font-medium">AI Optimization Coach</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Get personalized advice on improving your GEO
+            </p>
+          </div>
+          
+          <Button onClick={() => navigate("/pricing")} className="w-full">
+            Upgrade to Pro
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+
+  return (
+    <>
+      <div className="bg-card rounded-xl p-6 border border-border shadow-sm h-full flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Bot className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="text-lg font-semibold">Chat with Coach GEOvanni</h3>
+              <p className="text-xs text-muted-foreground">Your AI visibility advisor</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded(true)}
+            className="h-8 w-8"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {renderChatContent()}
+      </div>
+
+      {/* Fullscreen Dialog */}
+      <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-6 w-6 text-primary" />
+                <div>
+                  <DialogTitle>Chat with Coach GEOvanni</DialogTitle>
+                  <p className="text-xs text-muted-foreground">Your AI visibility advisor</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsExpanded(false)}
+                className="h-8 w-8"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 flex flex-col px-6 pb-6 overflow-hidden">
+            {renderChatContent()}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
