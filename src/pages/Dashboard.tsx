@@ -334,7 +334,7 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Bottom Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
               {/* Left Column - 3 stacked cards */}
               <div className="space-y-6">
                 <CompetitorIntelligenceCard isPro={isPro} />
@@ -343,7 +343,7 @@ const Dashboard = () => {
               </div>
               
               {/* Right Column - Coach GEOvanni (matches left column height) */}
-              <div className="flex">
+              <div className="h-full">
                 <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
               </div>
             </div>
