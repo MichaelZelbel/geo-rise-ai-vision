@@ -343,8 +343,10 @@ const Dashboard = () => {
               </div>
               
               {/* Right Column - Coach GEOvanni (full height) */}
-              <div className="md:col-span-2">
-                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
+              <div className="md:col-span-2 h-full">
+                <div className="h-full min-h-[600px]">
+                  <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
+                </div>
               </div>
             </div>
           </div>
