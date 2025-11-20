@@ -334,19 +334,17 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Bottom Section */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               {/* Left Column - 3 stacked cards */}
-              <div className="md:col-span-2 space-y-6">
+              <div className="space-y-6">
                 <CompetitorIntelligenceCard isPro={isPro} />
                 <ActionPlanCard />
                 <SemanticAnalysisCard />
               </div>
               
-              {/* Right Column - Coach GEOvanni (full height) */}
-              <div className="md:col-span-2 h-full">
-                <div className="h-full min-h-[600px]">
-                  <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
-                </div>
+              {/* Right Column - Coach GEOvanni (matches left column height) */}
+              <div className="flex">
+                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
               </div>
             </div>
           </div>

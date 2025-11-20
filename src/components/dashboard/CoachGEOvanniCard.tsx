@@ -150,60 +150,62 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   const renderChatContent = () => (
     <>
-      <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
-        {messages.length === 0 ? (
-          <div className="space-y-3">
-            <div className="text-center py-4">
-              <Bot className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Hi! I'm Coach GEOvanni. Ask me anything about improving your visibility.
-              </p>
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <ScrollArea className="flex-1 pr-4 mb-4">
+          {messages.length === 0 ? (
+            <div className="space-y-3">
+              <div className="text-center py-4">
+                <Bot className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Hi! I'm Coach GEOvanni. Ask me anything about improving your visibility.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Quick questions:</p>
+                {suggestedQuestions.map((q, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-left text-xs"
+                    onClick={() => setInput(q)}
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Quick questions:</p>
-              {suggestedQuestions.map((q, i) => (
-                <Button
-                  key={i}
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-left text-xs"
-                  onClick={() => setInput(q)}
-                >
-                  {q}
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
+          ) : (
+            <div className="space-y-3">
+              {messages.map((msg, i) => (
                 <div
-                  className={`max-w-[85%] rounded-lg p-3 ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
+                  key={i}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div
+                    className={`max-w-[85%] rounded-lg p-3 ${
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-lg p-3">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted rounded-lg p-3">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </ScrollArea>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 flex-shrink-0">
         <div className="flex gap-2">
           <Input
             value={input}
@@ -259,7 +261,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   return (
     <>
-      <div className="bg-card rounded-xl p-6 border border-border shadow-sm h-full flex flex-col">
+      <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col" style={{ height: '100%' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
