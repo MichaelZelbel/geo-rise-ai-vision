@@ -261,7 +261,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan }: CoachGEOvanniCardProps) => {
 
   return (
     <>
-      <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col flex-1">
+      <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col h-full min-h-0">
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
