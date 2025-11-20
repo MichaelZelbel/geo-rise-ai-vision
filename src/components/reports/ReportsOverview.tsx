@@ -1,5 +1,7 @@
 import { TrendingUp, TrendingDown, Calendar, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 interface ReportsOverviewProps {
@@ -8,6 +10,7 @@ interface ReportsOverviewProps {
 }
 
 const ReportsOverview = ({ analysisRuns, brandCreatedAt }: ReportsOverviewProps) => {
+  const navigate = useNavigate();
   const latestRun = analysisRuns[0];
   const change = latestRun?.change || 0;
   
@@ -49,6 +52,14 @@ const ReportsOverview = ({ analysisRuns, brandCreatedAt }: ReportsOverviewProps)
           <p className="text-xs text-muted-foreground mt-2">
             Last updated: {latestRun ? format(new Date(latestRun.date), "MMM d, yyyy") : "Never"}
           </p>
+          <Button 
+            onClick={() => navigate("/dashboard")} 
+            variant="default" 
+            size="sm"
+            className="w-full mt-4"
+          >
+            Analysis
+          </Button>
         </CardContent>
       </Card>
 
