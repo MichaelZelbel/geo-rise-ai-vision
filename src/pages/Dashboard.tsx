@@ -334,16 +334,18 @@ const Dashboard = () => {
             </div>
 
             {/* Third Row - Bottom Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:items-stretch">
+            <div className="flex flex-col md:flex-row gap-6">
               {/* Left Column - 3 stacked cards */}
-              <div className="space-y-6">
+              <div className="flex-1 space-y-6">
                 <CompetitorIntelligenceCard isPro={isPro} />
                 <ActionPlanCard />
                 <SemanticAnalysisCard />
               </div>
               
               {/* Right Column - Coach GEOvanni */}
-              <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
+              <div className="flex-1 flex">
+                <CoachGEOvanniCard brandId={brand.id} userPlan={profile?.plan || 'free'} />
+              </div>
             </div>
           </div>
         )}
