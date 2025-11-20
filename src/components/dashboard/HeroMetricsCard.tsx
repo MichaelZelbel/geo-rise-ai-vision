@@ -4,6 +4,8 @@ import { Cell, PieChart, Pie } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 import ScoreTrendSparkline from "./ScoreTrendSparkline";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface HeroMetricsCardProps {
   visibilityScore: number;
@@ -38,6 +40,7 @@ const HeroMetricsCard = ({
   analysisProgress = 0,
   onAnalysisStarted,
 }: HeroMetricsCardProps) => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   // Circular chart data for Share of Voice
@@ -80,6 +83,14 @@ const HeroMetricsCard = ({
               <span className="text-muted-foreground">No previous run to compare</span>
             )}
           </div>
+          <Button 
+            onClick={() => navigate("/reports")} 
+            variant="outline" 
+            size="sm"
+            className="w-full mb-4"
+          >
+            Report
+          </Button>
           {lastRun && (
             <p className="text-xs text-muted-foreground">
               Last run: {new Date(lastRun).toLocaleDateString()}
@@ -208,6 +219,14 @@ const HeroMetricsCard = ({
               <span className="text-muted-foreground">No previous run to compare</span>
             )}
           </div>
+          <Button 
+            onClick={() => navigate("/reports")} 
+            variant="outline" 
+            size="default"
+            className="w-full mb-4"
+          >
+            Report
+          </Button>
           {lastRun && (
             <p className="text-xs text-muted-foreground">
               Last run: {new Date(lastRun).toLocaleDateString()}
