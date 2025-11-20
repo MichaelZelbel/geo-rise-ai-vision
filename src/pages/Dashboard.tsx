@@ -240,7 +240,8 @@ const Dashboard = () => {
           if (positiveSentiment > negativeSentiment) status = "Sentiment Positive";
           else if (negativeSentiment > 0) status = "Issues Found";
 
-          scores[engine] = { score: Math.round(avgScore), status };
+          // Scale the score by 100 to make it more readable (0.26 becomes 26)
+          scores[engine] = { score: Math.round(avgScore * 100), status };
         });
         setEngineScores(scores);
 
