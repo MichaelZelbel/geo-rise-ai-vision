@@ -40,20 +40,6 @@ const DashboardHeader = ({ userEmail, userPlan }: DashboardHeaderProps) => {
               <img src={headerLogo} alt="GEORISE" className="h-10" />
             </Link>
             <nav className="hidden md:flex items-center gap-6">
-              <NavLink
-                to="/dashboard"
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                activeClassName="text-primary"
-              >
-                Dashboard
-              </NavLink>
-              <NavLink
-                to="/reports"
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                activeClassName="text-primary"
-              >
-                Reports
-              </NavLink>
               {userPlan === 'free' && (
                 <NavLink
                   to="/pricing"
