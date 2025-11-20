@@ -215,7 +215,7 @@ const HeroMetricsCard = ({
 
         {/* Section 3: Total Mentions with circular chart */}
         <div className="p-6 flex flex-col items-center justify-center">
-          <p className="text-sm text-muted-foreground mb-3">Total Mentions</p>
+          <h3 className="text-lg font-semibold text-card-foreground mb-3">Total Mentions</h3>
           <div className="relative">
             <PieChart width={120} height={120}>
               <Pie
