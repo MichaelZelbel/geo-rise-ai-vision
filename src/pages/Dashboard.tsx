@@ -6,10 +6,7 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import VisibilityScoreCard from "@/components/dashboard/VisibilityScoreCard";
-import ShareOfVoiceCard from "@/components/dashboard/ShareOfVoiceCard";
-import TotalMentionsCard from "@/components/dashboard/TotalMentionsCard";
-import BrandInfoCard from "@/components/dashboard/BrandInfoCard";
+import HeroMetricsCard from "@/components/dashboard/HeroMetricsCard";
 import AIEngineCard from "@/components/dashboard/AIEngineCard";
 import ActionPlanCard from "@/components/dashboard/ActionPlanCard";
 import SemanticAnalysisCard from "@/components/dashboard/SemanticAnalysisCard";
@@ -301,25 +298,23 @@ const Dashboard = () => {
           <EmptyState onStartAnalysis={handleStartAnalysis} />
         ) : (
           <div className="space-y-6">
-            {/* First Row - Hero Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <VisibilityScoreCard 
-                score={brand.visibility_score} 
-                lastRun={brand.last_run}
-              />
-              <ShareOfVoiceCard 
-                shareOfVoice={shareOfVoice}
-                change={0}
-              />
-              <TotalMentionsCard 
-                count={lastAnalysisRun?.mentions || 0}
-                growth={0}
-              />
-              <BrandInfoCard 
-                brandName={brand.name}
-                topic={brand.topic}
-              />
-            </div>
+            {/* First Row - Unified Hero Metrics */}
+            <HeroMetricsCard
+              visibilityScore={brand.visibility_score}
+              shareOfVoice={shareOfVoice}
+              totalMentions={lastAnalysisRun?.mentions || 0}
+              brandName={brand.name}
+              topic={brand.topic}
+              brandId={brand.id}
+              userId={user.id}
+              lastRun={brand.last_run}
+              isAnalysisRunning={lastAnalysisRun?.status === 'pending' || lastAnalysisRun?.status === 'processing'}
+              analysisStatus={lastAnalysisRun?.status}
+              analysisProgress={lastAnalysisRun?.completionPercentage}
+              onAnalysisStarted={(runId) => {
+                queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+              }}
+            />
 
             {/* Second Row - AI Engine Breakdown (4x2 grid) */}
             <div>
