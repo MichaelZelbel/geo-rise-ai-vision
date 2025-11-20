@@ -20,6 +20,9 @@ export default function BrandsSection({ userId, plan }: any) {
   const [selectedBrand, setSelectedBrand] = useState<any>(null);
   const [brandName, setBrandName] = useState("");
   const [brandTopic, setBrandTopic] = useState("");
+  const [competitor1, setCompetitor1] = useState("");
+  const [competitor2, setCompetitor2] = useState("");
+  const [competitor3, setCompetitor3] = useState("");
 
   const brandLimits: any = {
     free: 1,
@@ -40,10 +43,10 @@ export default function BrandsSection({ userId, plan }: any) {
       .eq("user_id", userId);
 
     setBrands(data || []);
-    
+
     const { data: canAdd } = await supabase.rpc("can_add_brand", { user_uuid: userId });
     setCanAddBrand(canAdd || false);
-    
+
     setLoading(false);
   };
 
@@ -55,10 +58,13 @@ export default function BrandsSection({ userId, plan }: any) {
 
     const { error } = await supabase
       .from("brands")
-      .insert({ 
-        user_id: userId, 
-        name: brandName.trim(), 
-        topic: brandTopic.trim() 
+      .insert({
+        user_id: userId,
+        name: brandName.trim(),
+        topic: brandTopic.trim(),
+        competitor_1: competitor1.trim() || "Auto",
+        competitor_2: competitor2.trim() || "Auto",
+        competitor_3: competitor3.trim() || "Auto"
       });
 
     if (error) {
@@ -68,6 +74,9 @@ export default function BrandsSection({ userId, plan }: any) {
       setAddDialogOpen(false);
       setBrandName("");
       setBrandTopic("");
+      setCompetitor1("");
+      setCompetitor2("");
+      setCompetitor3("");
       fetchBrands();
     }
   };
@@ -80,7 +89,13 @@ export default function BrandsSection({ userId, plan }: any) {
 
     const { error } = await supabase
       .from("brands")
-      .update({ name: brandName.trim(), topic: brandTopic.trim() })
+      .update({
+        name: brandName.trim(),
+        topic: brandTopic.trim(),
+        competitor_1: competitor1.trim() || "Auto",
+        competitor_2: competitor2.trim() || "Auto",
+        competitor_3: competitor3.trim() || "Auto"
+      })
       .eq("id", selectedBrand.id);
 
     if (error) {
@@ -111,6 +126,9 @@ export default function BrandsSection({ userId, plan }: any) {
     setSelectedBrand(brand);
     setBrandName(brand.name);
     setBrandTopic(brand.topic);
+    setCompetitor1(brand.competitor_1 || "Auto");
+    setCompetitor2(brand.competitor_2 || "Auto");
+    setCompetitor3(brand.competitor_3 || "Auto");
     setEditDialogOpen(true);
   };
 
@@ -185,20 +203,20 @@ export default function BrandsSection({ userId, plan }: any) {
 
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   disabled={!canAddBrand}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Brand
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Add New Brand</DialogTitle>
                   <DialogDescription>Track a new brand's AI visibility</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="brandName">Brand Name</Label>
                     <Input
@@ -217,6 +235,30 @@ export default function BrandsSection({ userId, plan }: any) {
                       placeholder="e.g., Electric Vehicles"
                     />
                   </div>
+
+                  <div className="space-y-3 pt-2 border-t">
+                    <Label>Competitors (Optional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Leave as "Auto" to let AI discover them, or enter specific domains/names.
+                    </p>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Competitor 1 (Default: Auto)"
+                        value={competitor1}
+                        onChange={(e) => setCompetitor1(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Competitor 2 (Default: Auto)"
+                        value={competitor2}
+                        onChange={(e) => setCompetitor2(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Competitor 3 (Default: Auto)"
+                        value={competitor3}
+                        onChange={(e) => setCompetitor3(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
@@ -226,12 +268,12 @@ export default function BrandsSection({ userId, plan }: any) {
             </Dialog>
 
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Edit Brand</DialogTitle>
-                  <DialogDescription>Update brand details</DialogDescription>
+                  <DialogDescription>Update brand details and competitors</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="editBrandName">Brand Name</Label>
                     <Input
@@ -247,6 +289,30 @@ export default function BrandsSection({ userId, plan }: any) {
                       value={brandTopic}
                       onChange={(e) => setBrandTopic(e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t">
+                    <Label>Competitors</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Leave as "Auto" to let AI discover them.
+                    </p>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Competitor 1"
+                        value={competitor1}
+                        onChange={(e) => setCompetitor1(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Competitor 2"
+                        value={competitor2}
+                        onChange={(e) => setCompetitor2(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Competitor 3"
+                        value={competitor3}
+                        onChange={(e) => setCompetitor3(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>

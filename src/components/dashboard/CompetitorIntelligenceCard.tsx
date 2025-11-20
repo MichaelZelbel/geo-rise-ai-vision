@@ -1,23 +1,17 @@
-import { TrendingUp, Lock } from "lucide-react";
+import { TrendingUp, Lock, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 interface CompetitorIntelligenceCardProps {
   isPro: boolean;
-  competitors?: Array<{
+  competitorData?: Array<{
     name: string;
     score: number;
     gap?: string;
-  }>;
+  }> | null;
 }
 
-const mockCompetitors = [
-  { name: "Competitor A", score: 78, gap: "AI thinks they're more established" },
-  { name: "Competitor B", score: 65, gap: "Stronger social media presence" },
-  { name: "Competitor C", score: 62, gap: "More consistent content output" }
-];
-
-const CompetitorIntelligenceCard = ({ isPro, competitors = mockCompetitors }: CompetitorIntelligenceCardProps) => {
+const CompetitorIntelligenceCard = ({ isPro, competitorData }: CompetitorIntelligenceCardProps) => {
   const navigate = useNavigate();
 
   if (!isPro) {
@@ -57,34 +51,46 @@ const CompetitorIntelligenceCard = ({ isPro, competitors = mockCompetitors }: Co
 
   return (
     <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
-      <h3 className="text-lg font-semibold text-card-foreground mb-4">
-        Competitor Intelligence
-      </h3>
-      
-      <div className="space-y-3">
-        {competitors.map((competitor, index) => (
-          <div
-            key={index}
-            className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-card-foreground">
-                {competitor.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-accent" />
-                <span className="font-semibold text-accent">{competitor.score}</span>
-              </div>
-            </div>
-            {competitor.gap && (
-              <p className="text-xs text-muted-foreground italic">
-                Gap: {competitor.gap}
-              </p>
-            )}
-          </div>
-        ))}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-card-foreground">
+          Competitor Intelligence
+        </h3>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/account?tab=brands")}>
+          <Settings className="h-4 w-4 text-muted-foreground" />
+        </Button>
       </div>
-      
+
+      <div className="space-y-3">
+        {competitorData && competitorData.length > 0 ? (
+          competitorData.map((competitor, index) => (
+            <div
+              key={index}
+              className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-card-foreground">
+                  {competitor.name}
+                </span>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-accent" />
+                  <span className="font-semibold text-accent">{competitor.score}</span>
+                </div>
+              </div>
+              {competitor.gap && (
+                <p className="text-xs text-muted-foreground italic">
+                  Gap: {competitor.gap}
+                </p>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-4 text-muted-foreground text-sm">
+            <p>No competitor data available yet.</p>
+            <p className="mt-1">Run an analysis to see results.</p>
+          </div>
+        )}
+      </div>
+
       <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
         AI-powered competitive analysis
       </p>
