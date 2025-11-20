@@ -116,6 +116,7 @@ export type Database = {
           brand_id: string
           brand_name: string
           citation_count: number | null
+          competitor_data: Json | null
           completed_at: string | null
           completion_percentage: number | null
           created_at: string
@@ -142,6 +143,7 @@ export type Database = {
           brand_id: string
           brand_name: string
           citation_count?: number | null
+          competitor_data?: Json | null
           completed_at?: string | null
           completion_percentage?: number | null
           created_at?: string
@@ -168,6 +170,7 @@ export type Database = {
           brand_id?: string
           brand_name?: string
           citation_count?: number | null
+          competitor_data?: Json | null
           completed_at?: string | null
           completion_percentage?: number | null
           created_at?: string
@@ -214,6 +217,9 @@ export type Database = {
       }
       brands: {
         Row: {
+          competitor_1: string | null
+          competitor_2: string | null
+          competitor_3: string | null
           created_at: string
           id: string
           last_run: string | null
@@ -224,6 +230,9 @@ export type Database = {
           visibility_score: number
         }
         Insert: {
+          competitor_1?: string | null
+          competitor_2?: string | null
+          competitor_3?: string | null
           created_at?: string
           id?: string
           last_run?: string | null
@@ -234,6 +243,9 @@ export type Database = {
           visibility_score?: number
         }
         Update: {
+          competitor_1?: string | null
+          competitor_2?: string | null
+          competitor_3?: string | null
           created_at?: string
           id?: string
           last_run?: string | null
