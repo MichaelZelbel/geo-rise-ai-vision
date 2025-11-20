@@ -72,6 +72,9 @@ export function RunAnalysisButton({
       if (onAnalysisStarted) {
         onAnalysisStarted(runId);
       }
+
+      // Keep loading state for minimum 2 seconds for better UX feedback
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
       console.error('Failed to start analysis:', error);
 
