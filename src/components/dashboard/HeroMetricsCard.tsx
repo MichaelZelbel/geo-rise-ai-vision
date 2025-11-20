@@ -85,7 +85,7 @@ const HeroMetricsCard = ({
           </div>
           <Button 
             onClick={() => navigate("/reports")} 
-            variant="outline" 
+            variant="default" 
             size="sm"
             className="w-full mb-4"
           >
@@ -221,7 +221,7 @@ const HeroMetricsCard = ({
           </div>
           <Button 
             onClick={() => navigate("/reports")} 
-            variant="outline" 
+            variant="default" 
             size="default"
             className="w-full mb-4"
           >
