@@ -10,7 +10,7 @@ const TestLayout = () => {
         <h1 className="text-2xl font-bold mb-6">Layout Test - No Auth Required</h1>
         
         {/* Third Row - Bottom Section */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column - 3 stacked cards */}
           <div className="space-y-6">
             <CompetitorIntelligenceCard isPro={true} />
@@ -19,9 +19,7 @@ const TestLayout = () => {
           </div>
           
           {/* Right Column - Coach GEOvanni (should match left column height) */}
-          <div className="min-h-full">
-            <CoachGEOvanniCard brandId="test-brand-id" userPlan="pro" />
-          </div>
+          <CoachGEOvanniCard brandId="test-brand-id" userPlan="pro" />
         </div>
       </div>
     </div>
