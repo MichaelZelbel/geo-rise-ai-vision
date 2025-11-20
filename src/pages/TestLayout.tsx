@@ -10,7 +10,7 @@ const TestLayout = () => {
         <h1 className="text-2xl font-bold mb-6">Layout Test - No Auth Required</h1>
         
         {/* Third Row - Bottom Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:items-stretch">
           {/* Left Column - 3 stacked cards */}
           <div className="space-y-6">
             <CompetitorIntelligenceCard isPro={true} />
