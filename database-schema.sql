@@ -1,349 +1,250 @@
 -- ============================================
--- GEORISE DATABASE SCHEMA
--- Complete schema export for migration
--- Date: 2025-11-09
+-- GeoRise Database Schema
+-- Generated: 2025-01-20
 -- ============================================
 
 -- ============================================
 -- EXTENSIONS
 -- ============================================
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ============================================
 -- ENUMS
 -- ============================================
+
 CREATE TYPE app_role AS ENUM ('user', 'admin');
 
 -- ============================================
 -- TABLES
 -- ============================================
 
--- Table: profiles
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY,
-  email TEXT NOT NULL,
-  role app_role NOT NULL DEFAULT 'user'::app_role,
-  plan TEXT NOT NULL DEFAULT 'free',
-  tenant_id UUID,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+-- AI Engine Weights Table
+CREATE TABLE public.ai_engine_weights (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  engine_key TEXT NOT NULL,
+  engine_query TEXT NOT NULL,
+  trend_value NUMERIC NOT NULL,
+  weight NUMERIC NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
 );
 
--- Table: brands
-CREATE TABLE IF NOT EXISTS public.brands (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- Analyses Table
+CREATE TABLE public.analyses (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL,
+  run_id TEXT NOT NULL DEFAULT gen_random_uuid(),
+  ai_engine TEXT NOT NULL,
+  query TEXT NOT NULL,
+  position INTEGER,
+  sentiment TEXT,
+  mention_type TEXT,
+  url TEXT,
+  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  mentioned BOOLEAN DEFAULT false,
+  query_index INTEGER,
+  context TEXT,
+  full_response TEXT,
+  question_type TEXT,
+  question_weight INTEGER,
+  points_earned INTEGER DEFAULT 0,
+  PRIMARY KEY (id)
+);
+
+-- Analysis Runs Table
+CREATE TABLE public.analysis_runs (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  run_id TEXT NOT NULL,
+  brand_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  brand_name TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  status TEXT NOT NULL,
+  progress INTEGER DEFAULT 0,
+  total_queries INTEGER DEFAULT 20,
+  queries_completed INTEGER DEFAULT 0,
+  visibility_score NUMERIC,
+  total_mentions INTEGER DEFAULT 0,
+  mention_rate NUMERIC,
+  citation_count INTEGER DEFAULT 0,
+  top_position_count INTEGER DEFAULT 0,
+  avg_position NUMERIC,
+  error_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  completed_at TIMESTAMP WITH TIME ZONE,
+  ai_engine TEXT DEFAULT 'perplexity'::text,
+  retry_count INTEGER DEFAULT 0,
+  monitoring_config_id UUID,
+  completion_percentage INTEGER DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE (run_id)
+);
+
+-- Brands Table
+CREATE TABLE public.brands (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   name TEXT NOT NULL,
   topic TEXT NOT NULL,
   visibility_score INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   last_run TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  PRIMARY KEY (id)
 );
 
--- Table: user_roles
-CREATE TABLE IF NOT EXISTS public.user_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  role app_role NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
--- Table: analyses
-CREATE TABLE IF NOT EXISTS public.analyses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  brand_id UUID NOT NULL,
-  run_id UUID NOT NULL DEFAULT gen_random_uuid(),
-  ai_engine TEXT NOT NULL,
-  query TEXT NOT NULL,
-  position INTEGER,
-  mention_type TEXT,
-  sentiment TEXT,
-  url TEXT,
-  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
--- Table: competitors
-CREATE TABLE IF NOT EXISTS public.competitors (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  brand_id UUID NOT NULL,
-  competitor_name TEXT NOT NULL,
-  score INTEGER NOT NULL DEFAULT 0,
-  delta INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
--- Table: insights
-CREATE TABLE IF NOT EXISTS public.insights (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  brand_id UUID NOT NULL,
-  run_id UUID,
-  type TEXT NOT NULL,
-  text TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
--- Table: coach_conversations
-CREATE TABLE IF NOT EXISTS public.coach_conversations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- Coach Conversations Table
+CREATE TABLE public.coach_conversations (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   brand_id UUID NOT NULL,
   role TEXT NOT NULL,
   message TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
 );
 
--- Table: subscriptions
-CREATE TABLE IF NOT EXISTS public.subscriptions (
-  user_id UUID PRIMARY KEY,
-  plan TEXT NOT NULL DEFAULT 'free',
-  stripe_customer_id TEXT,
-  active_until TIMESTAMP WITH TIME ZONE,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+-- Competitors Table
+CREATE TABLE public.competitors (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL,
+  competitor_name TEXT NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  delta INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
 );
 
--- Table: rate_limits
-CREATE TABLE IF NOT EXISTS public.rate_limits (
-  id BIGSERIAL PRIMARY KEY,
+-- Insights Table
+CREATE TABLE public.insights (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL,
+  run_id UUID,
+  type TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
+);
+
+-- Monitoring Configs Table
+CREATE TABLE public.monitoring_configs (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  topic TEXT NOT NULL,
+  enabled_engines TEXT[] NOT NULL DEFAULT ARRAY['perplexity'::text],
+  frequency TEXT NOT NULL,
+  active BOOLEAN DEFAULT true,
+  last_run_at TIMESTAMP WITH TIME ZONE,
+  next_run_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
+);
+
+-- Profiles Table
+CREATE TABLE public.profiles (
+  id UUID NOT NULL,
+  email TEXT NOT NULL,
+  role app_role NOT NULL DEFAULT 'user'::app_role,
+  plan TEXT NOT NULL DEFAULT 'free'::text,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  tenant_id UUID,
+  display_name TEXT,
+  avatar_url TEXT,
+  bio TEXT,
+  PRIMARY KEY (id)
+);
+
+-- Rate Limits Table
+CREATE TABLE public.rate_limits (
+  id BIGINT NOT NULL DEFAULT nextval('rate_limits_id_seq'::regclass),
   ip_hash TEXT NOT NULL,
   user_agent TEXT,
   last_run TIMESTAMP WITH TIME ZONE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
+);
+
+-- Subscriptions Table
+CREATE TABLE public.subscriptions (
+  user_id UUID NOT NULL,
+  stripe_customer_id TEXT,
+  plan TEXT NOT NULL DEFAULT 'free'::text,
+  active_until TIMESTAMP WITH TIME ZONE,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id)
+);
+
+-- User Roles Table
+CREATE TABLE public.user_roles (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  role app_role NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  PRIMARY KEY (id),
+  UNIQUE (user_id, role)
 );
 
 -- ============================================
--- FUNCTIONS
+-- INDEXES
 -- ============================================
 
--- Function: update_updated_at_column
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '';
-
--- Function: has_role
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
-RETURNS BOOLEAN
-LANGUAGE SQL
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.user_roles
-    WHERE user_id = _user_id
-      AND role = _role
-  )
-$$;
-
--- Function: handle_new_user
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, role, plan)
-  VALUES (
-    new.id,
-    new.email,
-    'user',
-    'free'
-  );
-  
-  -- Add default user role
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (new.id, 'user');
-  
-  RETURN new;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '';
-
--- Function: get_user_plan
-CREATE OR REPLACE FUNCTION public.get_user_plan(user_uuid UUID)
-RETURNS TEXT
-LANGUAGE SQL
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT plan FROM public.profiles WHERE id = user_uuid;
-$$;
-
--- Function: can_add_brand
-CREATE OR REPLACE FUNCTION public.can_add_brand(user_uuid UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  user_plan text;
-  brand_count integer;
-BEGIN
-  SELECT plan INTO user_plan FROM public.profiles WHERE id = user_uuid;
-  SELECT COUNT(*) INTO brand_count FROM public.brands WHERE user_id = user_uuid;
-  
-  RETURN CASE
-    WHEN user_plan = 'free' THEN brand_count < 1
-    WHEN user_plan = 'pro' OR user_plan = 'giftedPro' THEN brand_count < 3
-    WHEN user_plan = 'business' OR user_plan = 'giftedAgency' THEN brand_count < 10
-    ELSE false
-  END;
-END;
-$$;
+CREATE INDEX ai_engine_weights_engine_created_idx ON public.ai_engine_weights (engine_key, created_at DESC);
+CREATE INDEX idx_analyses_ai_engine ON public.analyses (ai_engine);
+CREATE INDEX idx_analyses_brand_id ON public.analyses (brand_id);
+CREATE INDEX idx_analyses_mentioned ON public.analyses (mentioned);
+CREATE INDEX idx_analyses_query_index ON public.analyses (query_index);
+CREATE INDEX idx_analyses_question_type ON public.analyses (question_type);
+CREATE INDEX idx_analyses_run_id ON public.analyses (run_id);
+CREATE INDEX idx_analysis_runs_ai_engine ON public.analysis_runs (ai_engine);
+CREATE INDEX idx_analysis_runs_brand_id ON public.analysis_runs (brand_id);
+CREATE INDEX idx_analysis_runs_created_at ON public.analysis_runs (created_at DESC);
+CREATE INDEX idx_analysis_runs_monitoring_config ON public.analysis_runs (monitoring_config_id);
+CREATE INDEX idx_analysis_runs_run_id ON public.analysis_runs (run_id);
+CREATE INDEX idx_analysis_runs_status ON public.analysis_runs (status);
+CREATE INDEX idx_analysis_runs_user_id ON public.analysis_runs (user_id);
+CREATE INDEX idx_brands_user_id ON public.brands (user_id);
+CREATE INDEX idx_coach_conversations_brand_id ON public.coach_conversations (brand_id);
+CREATE INDEX idx_coach_conversations_created_at ON public.coach_conversations (created_at DESC);
+CREATE INDEX idx_competitors_brand_id ON public.competitors (brand_id);
+CREATE INDEX idx_insights_brand_id ON public.insights (brand_id);
+CREATE INDEX idx_monitoring_configs_active ON public.monitoring_configs (active);
+CREATE INDEX idx_monitoring_configs_brand_active ON public.monitoring_configs (brand_id, active);
+CREATE INDEX idx_monitoring_configs_brand_id ON public.monitoring_configs (brand_id);
+CREATE INDEX idx_monitoring_configs_next_run ON public.monitoring_configs (next_run_at);
+CREATE INDEX idx_monitoring_configs_user_id ON public.monitoring_configs (user_id);
+CREATE INDEX unique_brand_topic ON public.monitoring_configs (brand_id, topic);
+CREATE INDEX idx_rate_limits_ip_hash ON public.rate_limits (ip_hash);
 
 -- ============================================
--- TRIGGERS
+-- FUNCTIONS (see database for full definitions)
 -- ============================================
-
--- Trigger: handle_new_user on auth.users
--- Note: This should be created on auth.users table
--- CREATE TRIGGER on_auth_user_created
---   AFTER INSERT ON auth.users
---   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- Trigger: update_updated_at on profiles
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
--- Trigger: update_updated_at on brands
-CREATE TRIGGER update_brands_updated_at
-  BEFORE UPDATE ON public.brands
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
--- Trigger: update_updated_at on subscriptions
-CREATE TRIGGER update_subscriptions_updated_at
-  BEFORE UPDATE ON public.subscriptions
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
+-- calculate_next_run_at(text)
+-- can_add_brand(uuid)
+-- can_create_monitoring_config(uuid, uuid)
+-- get_analysis_progress(text)
+-- get_user_plan(uuid)
+-- handle_new_user()
+-- has_role(uuid, app_role)
+-- update_analysis_runs_updated_at()
+-- update_monitoring_configs_updated_at()
+-- update_monitoring_next_run()
+-- update_updated_at_column()
 
 -- ============================================
--- ROW LEVEL SECURITY POLICIES
+-- VIEWS
 -- ============================================
-
--- Enable RLS on all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.analyses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.competitors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.insights ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.coach_conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
-
--- Policies for profiles
-CREATE POLICY "Users can view their own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
-
-CREATE POLICY "Users can update their own profile"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id);
-
--- Policies for brands
-CREATE POLICY "Users can view their own brands"
-  ON public.brands FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own brands"
-  ON public.brands FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own brands"
-  ON public.brands FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own brands"
-  ON public.brands FOR DELETE
-  USING (auth.uid() = user_id);
-
--- Policies for user_roles
-CREATE POLICY "Users can view their own roles"
-  ON public.user_roles FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can view all roles"
-  ON public.user_roles FOR SELECT
-  USING (has_role(auth.uid(), 'admin'::app_role));
-
--- Policies for analyses
-CREATE POLICY "Users can view analyses for their brands"
-  ON public.analyses FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM public.brands
-    WHERE brands.id = analyses.brand_id
-      AND brands.user_id = auth.uid()
-  ));
-
--- Policies for competitors
-CREATE POLICY "Users can view competitors for their brands"
-  ON public.competitors FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM public.brands
-    WHERE brands.id = competitors.brand_id
-      AND brands.user_id = auth.uid()
-  ));
-
-CREATE POLICY "Users can insert competitors for their brands"
-  ON public.competitors FOR INSERT
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM public.brands
-    WHERE brands.id = competitors.brand_id
-      AND brands.user_id = auth.uid()
-  ));
-
-CREATE POLICY "Users can update competitors for their brands"
-  ON public.competitors FOR UPDATE
-  USING (EXISTS (
-    SELECT 1 FROM public.brands
-    WHERE brands.id = competitors.brand_id
-      AND brands.user_id = auth.uid()
-  ));
-
-CREATE POLICY "Users can delete competitors for their brands"
-  ON public.competitors FOR DELETE
-  USING (EXISTS (
-    SELECT 1 FROM public.brands
-    WHERE brands.id = competitors.brand_id
-      AND brands.user_id = auth.uid()
-  ));
-
--- Policies for insights
-CREATE POLICY "Users can view insights for their brands"
-  ON public.insights FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM public.brands
-    WHERE brands.id = insights.brand_id
-      AND brands.user_id = auth.uid()
-  ));
-
--- Policies for coach_conversations
-CREATE POLICY "Users can view their own conversations"
-  ON public.coach_conversations FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own conversations"
-  ON public.coach_conversations FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
--- Policies for subscriptions
-CREATE POLICY "Users can view their own subscription"
-  ON public.subscriptions FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own subscription"
-  ON public.subscriptions FOR UPDATE
-  USING (auth.uid() = user_id);
+-- ai_engine_weights_latest
+-- analysis_run_summary
+-- latest_brand_analyses
+-- monitoring_configs_due
 
 -- ============================================
--- NOTES
+-- ROW LEVEL SECURITY
 -- ============================================
--- After running this schema:
--- 1. Create auth.users records using Supabase dashboard or auth API
--- 2. The handle_new_user trigger will auto-create profiles and user_roles
--- 3. Then run database-dump.sql to import the data
--- 4. Update your .env file with new Supabase credentials
--- ============================================
+-- RLS is enabled on all tables with appropriate policies
