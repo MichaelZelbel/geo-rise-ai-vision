@@ -116,6 +116,15 @@ export type Database = {
           brand_id: string
           brand_name: string
           citation_count: number | null
+          competitor_1_gap: string | null
+          competitor_1_name: string | null
+          competitor_1_score: number | null
+          competitor_2_gap: string | null
+          competitor_2_name: string | null
+          competitor_2_score: number | null
+          competitor_3_gap: string | null
+          competitor_3_name: string | null
+          competitor_3_score: number | null
           competitor_data: Json | null
           completed_at: string | null
           completion_percentage: number | null
@@ -143,6 +152,15 @@ export type Database = {
           brand_id: string
           brand_name: string
           citation_count?: number | null
+          competitor_1_gap?: string | null
+          competitor_1_name?: string | null
+          competitor_1_score?: number | null
+          competitor_2_gap?: string | null
+          competitor_2_name?: string | null
+          competitor_2_score?: number | null
+          competitor_3_gap?: string | null
+          competitor_3_name?: string | null
+          competitor_3_score?: number | null
           competitor_data?: Json | null
           completed_at?: string | null
           completion_percentage?: number | null
@@ -170,6 +188,15 @@ export type Database = {
           brand_id?: string
           brand_name?: string
           citation_count?: number | null
+          competitor_1_gap?: string | null
+          competitor_1_name?: string | null
+          competitor_1_score?: number | null
+          competitor_2_gap?: string | null
+          competitor_2_name?: string | null
+          competitor_2_score?: number | null
+          competitor_3_gap?: string | null
+          competitor_3_name?: string | null
+          competitor_3_score?: number | null
           competitor_data?: Json | null
           completed_at?: string | null
           completion_percentage?: number | null
@@ -285,41 +312,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "coach_conversations_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      competitors: {
-        Row: {
-          brand_id: string
-          competitor_name: string
-          created_at: string
-          delta: number
-          id: string
-          score: number
-        }
-        Insert: {
-          brand_id: string
-          competitor_name: string
-          created_at?: string
-          delta?: number
-          id?: string
-          score?: number
-        }
-        Update: {
-          brand_id?: string
-          competitor_name?: string
-          created_at?: string
-          delta?: number
-          id?: string
-          score?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_competitors_brand"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
