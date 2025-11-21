@@ -238,22 +238,13 @@ const ChatCoach = ({ brandId, userPlan }: ChatCoachProps) => {
             <p className="text-xs text-muted-foreground">Your AI visibility advisor</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMinimized(!isMinimized)}
-          >
-            <Minimize2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMinimized(!isMinimized)}
+        >
+          <Minimize2 className="h-4 w-4" />
+        </Button>
       </div>
 
       {!isMinimized && (
