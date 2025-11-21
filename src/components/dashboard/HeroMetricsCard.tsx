@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { RunAnalysisButton } from "./RunAnalysisButton";
 import { Cell, PieChart, Pie } from "recharts";
@@ -42,6 +43,16 @@ const HeroMetricsCard = ({
 }: HeroMetricsCardProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [localAnalysisRunning, setLocalAnalysisRunning] = useState(false);
+
+  // Keep a local "start" state so the button and progress bar respond immediately
+  useEffect(() => {
+    if (analysisStatus === 'completed' || analysisStatus === 'failed') {
+      setLocalAnalysisRunning(false);
+    }
+  }, [analysisStatus]);
+
+  const isRunning = isAnalysisRunning || localAnalysisRunning;
 
   // Circular chart data for Share of Voice
   const shareOfVoiceData = [
@@ -172,7 +183,7 @@ const HeroMetricsCard = ({
               <p className="font-semibold text-foreground">{topic}</p>
             </div>
             <div className="pt-2">
-              {isAnalysisRunning && analysisProgress !== undefined && (
+              {isRunning && analysisProgress !== undefined && (
                 <div className="space-y-2 mb-3">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">Analyzing...</span>
@@ -186,8 +197,11 @@ const HeroMetricsCard = ({
                 brandName={brandName}
                 topic={topic}
                 userId={userId}
-                onAnalysisStarted={onAnalysisStarted}
-                isAnalysisRunning={isAnalysisRunning}
+                onAnalysisStarted={(runId) => {
+                  setLocalAnalysisRunning(true);
+                  onAnalysisStarted?.(runId);
+                }}
+                isAnalysisRunning={isRunning}
                 variant="default"
                 size="sm"
                 className="w-full"
@@ -308,28 +322,31 @@ const HeroMetricsCard = ({
               <p className="font-semibold text-foreground">{topic}</p>
             </div>
           </div>
-          <div className="mt-4">
-            {isAnalysisRunning && analysisProgress !== undefined && (
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Analyzing...</span>
-                  <span className="font-medium">{Math.round(analysisProgress)}%</span>
-                </div>
-                <Progress value={analysisProgress} className="h-2" />
-              </div>
-            )}
-            <RunAnalysisButton
-              brandId={brandId}
-              brandName={brandName}
-              topic={topic}
-              userId={userId}
-              onAnalysisStarted={onAnalysisStarted}
-              isAnalysisRunning={isAnalysisRunning}
-              variant="default"
-              size="default"
-              className="w-full"
-            />
+      <div className="mt-4">
+        {isRunning && analysisProgress !== undefined && (
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Analyzing...</span>
+              <span className="font-medium">{Math.round(analysisProgress)}%</span>
+            </div>
+            <Progress value={analysisProgress} className="h-2" />
           </div>
+        )}
+        <RunAnalysisButton
+          brandId={brandId}
+          brandName={brandName}
+          topic={topic}
+          userId={userId}
+          onAnalysisStarted={(runId) => {
+            setLocalAnalysisRunning(true);
+            onAnalysisStarted?.(runId);
+          }}
+          isAnalysisRunning={isRunning}
+          variant="default"
+          size="default"
+          className="w-full"
+        />
+      </div>
         </div>
       </div>
     </div>
