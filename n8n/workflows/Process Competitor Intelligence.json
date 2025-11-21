@@ -1,0 +1,30 @@
+{
+  "name": "Process Competitor Intelligence",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e3a2d19d-2bdc-4e38-8f72-b29295ec0daa",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "290b6ca8-5890-4143-b6e3-3b850e15371c",
+  "meta": {
+    "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
+  },
+  "id": "ZjdYn2YtHbYvfWs6",
+  "tags": []
+}
