@@ -42,7 +42,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // React Query for latest analysis run and trend data - polls only when analysis is running
+  // React Query for latest analysis run and trend data (completed runs only)
   const { data: lastAnalysisRun } = useQuery({
     queryKey: ["latest-analysis-run", brand?.id],
     queryFn: async () => {
@@ -98,6 +98,30 @@ const Dashboard = () => {
     },
   });
 
+  // React Query for current analysis run (includes runs still in progress)
+  const { data: currentAnalysisRun } = useQuery({
+    queryKey: ["current-analysis-run", brand?.id],
+    queryFn: async () => {
+      if (!brand?.id) return null;
+
+      const { data: runs } = await supabase
+        .from("analysis_runs")
+        .select("*")
+        .eq("brand_id", brand.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (!runs || runs.length === 0) return null;
+
+      return runs[0];
+    },
+    enabled: !!brand?.id,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return (status === 'pending' || status === 'processing') ? 2000 : false;
+    },
+  });
+
   const topicParam = searchParams.get("topic");
   const brandParam = searchParams.get("brand");
 
@@ -146,8 +170,9 @@ const Dashboard = () => {
         },
         (payload) => {
           console.log('Realtime analysis update:', payload);
-          // Invalidate query to refetch latest data
+          // Invalidate queries to refetch latest data
           queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+          queryClient.invalidateQueries({ queryKey: ["current-analysis-run", brand.id] });
         }
       )
       .subscribe();
@@ -305,6 +330,10 @@ const Dashboard = () => {
     ? Math.round((lastAnalysisRun.mentions / lastAnalysisRun.totalQueries) * 100)
     : 0;
 
+  // Determine current analysis status from separate query that includes in-progress runs
+  const currentStatus = currentAnalysisRun?.status;
+  const currentProgress = currentAnalysisRun?.completion_percentage || 0;
+
   // All 8 AI engines
   const allEngines = [
     { id: "chatgpt", name: "ChatGPT" },
@@ -327,23 +356,24 @@ const Dashboard = () => {
           <div className="space-y-6">
             {/* First Row - Unified Hero Metrics */}
             <HeroMetricsCard
-              visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
-              scoreTrend={lastAnalysisRun?.scoreTrend}
-              sparklineData={lastAnalysisRun?.sparklineData}
-              shareOfVoice={shareOfVoice}
-              totalMentions={lastAnalysisRun?.mentions || 0}
-              brandName={brand.name}
-              topic={brand.topic}
-              brandId={brand.id}
-              userId={user.id}
-              lastRun={brand.last_run}
-              isAnalysisRunning={lastAnalysisRun?.status === 'pending' || lastAnalysisRun?.status === 'processing'}
-              analysisStatus={lastAnalysisRun?.status}
-              analysisProgress={lastAnalysisRun?.completionPercentage}
-              onAnalysisStarted={(runId) => {
-                queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
-              }}
-            />
+               visibilityScore={lastAnalysisRun?.score || brand.visibility_score}
+               scoreTrend={lastAnalysisRun?.scoreTrend}
+               sparklineData={lastAnalysisRun?.sparklineData}
+               shareOfVoice={shareOfVoice}
+               totalMentions={lastAnalysisRun?.mentions || 0}
+               brandName={brand.name}
+               topic={brand.topic}
+               brandId={brand.id}
+               userId={user.id}
+               lastRun={brand.last_run}
+               isAnalysisRunning={currentStatus === 'pending' || currentStatus === 'processing'}
+               analysisStatus={currentStatus}
+               analysisProgress={currentProgress}
+               onAnalysisStarted={(runId) => {
+                 queryClient.invalidateQueries({ queryKey: ["latest-analysis-run", brand.id] });
+                 queryClient.invalidateQueries({ queryKey: ["current-analysis-run", brand.id] });
+               }}
+             />
 
             {/* Second Row - AI Engine Breakdown (4x2 grid) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
