@@ -8,7 +8,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img src={headerLogo} alt="GEORISE" className="h-10" />
+            <img src={headerLogo} alt="GEORISE" className="h-10 -ml-1.5" />
           </div>
           <Link to="/auth">
             <Button variant="outline" className="border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all">
