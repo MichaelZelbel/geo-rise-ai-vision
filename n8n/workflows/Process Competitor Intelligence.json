@@ -72,27 +72,125 @@
     },
     {
       "parameters": {
-        "jsCode": "// Simple placeholder implementation for competitor identification\n// Returns 3 generic competitors with scores\n\nreturn [\n  { json: { name: 'Competitor A', score: 80, gap: 'Competitor A has higher visibility in search results.' } },\n  { json: { name: 'Competitor B', score: 75, gap: 'Competitor B has stronger brand recognition.' } },\n  { json: { name: 'Competitor C', score: 70, gap: 'Competitor C has better content strategy.' } }\n];"
+        "operation": "get",
+        "tableId": "brands",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Config').first().json.brandId }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "columns": "competitor_1,competitor_2,competitor_3"
       },
-      "id": "6c81025a-b9b7-4f9c-bc7b-85b26d1474c9",
-      "name": "Generate Competitors",
+      "id": "fetch-brand-config",
+      "name": "Fetch Brand Config",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        304,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xjyTBcrvj3X5rWEu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "analyses",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "run_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Config').first().json.runId }}"
+            }
+          ]
+        },
+        "limit": 100
+      },
+      "id": "fetch-analyses",
+      "name": "Fetch All Analyses for Run",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        504,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xjyTBcrvj3X5rWEu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const brandConfig = $('Fetch Brand Config').first().json;\nconst analyses = $input.all().map(i => i.json);\nconst mainBrandName = $('Config').first().json.brandName;\n\n// Helper to normalize strings\nconst normalize = (s) => s ? s.toLowerCase().trim() : '';\nconst normalizedMainBrand = normalize(mainBrandName);\n\n// User defined competitors\nlet competitors = [];\nif (brandConfig.competitor_1) competitors.push({ name: brandConfig.competitor_1, score: 0, origin: 'user' });\nif (brandConfig.competitor_2) competitors.push({ name: brandConfig.competitor_2, score: 0, origin: 'user' });\nif (brandConfig.competitor_3) competitors.push({ name: brandConfig.competitor_3, score: 0, origin: 'user' });\n\n// Analyze mentions to calculate scores or find competitors\nconst mentionCounts = {};\n\nanalyses.forEach(analysis => {\n  const text = (analysis.full_response || '') + ' ' + (analysis.context || '');\n  \n  // If user competitors are defined, search for them specifically\n  if (competitors.length > 0) {\n    competitors.forEach(comp => {\n      const regex = new RegExp(`\\\\b${comp.name}\\\\b`, 'gi');\n      const matches = text.match(regex);\n      if (matches) {\n        comp.score += matches.length * 10;\n      }\n    });\n  } else {\n    // Auto-discovery mode (simplified)\n    const words = text.match(/\\b[A-Z][a-zA-Z0-9]+\\b/g) || [];\n    words.forEach(word => {\n      const norm = normalize(word);\n      if (norm !== normalizedMainBrand && norm.length > 3) {\n        mentionCounts[word] = (mentionCounts[word] || 0) + 1;\n      }\n    });\n  }\n});\n\nif (competitors.length === 0) {\n  competitors = Object.entries(mentionCounts)\n    .map(([name, count]) => ({ name, score: count * 5, origin: 'auto' }))\n    .sort((a, b) => b.score - a.score)\n    .slice(0, 3);\n    \n  if (competitors.length === 0) {\n     competitors = [\n       { name: 'Competitor A', score: 50, origin: 'placeholder' },\n       { name: 'Competitor B', score: 40, origin: 'placeholder' },\n       { name: 'Competitor C', score: 30, origin: 'placeholder' }\n     ];\n  }\n}\n\ncompetitors.forEach(c => {\n  c.score = Math.min(100, Math.max(10, c.score));\n});\n\nreturn competitors.map(c => ({ json: c }));"
+      },
+      "id": "identify-competitors",
+      "name": "Identify Competitors",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        304,
+        704,
         288
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Collect all competitors and format as flat fields\nconst competitors = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    competitor_1_name: competitors[0]?.name || null,\n    competitor_1_score: competitors[0]?.score || null,\n    competitor_1_gap: competitors[0]?.gap || null,\n    competitor_2_name: competitors[1]?.name || null,\n    competitor_2_score: competitors[1]?.score || null,\n    competitor_2_gap: competitors[1]?.gap || null,\n    competitor_3_name: competitors[2]?.name || null,\n    competitor_3_score: competitors[2]?.score || null,\n    competitor_3_gap: competitors[2]?.gap || null\n  }\n}];"
+        "url": "https://ai.gateway.lovable.dev/v1/chat/completions",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.LOVABLE_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "google/gemini-2.0-flash-exp"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [\n  { \"role\": \"system\", \"content\": \"You are a competitive analysis expert. Generate a one-sentence gap statement comparing brand visibility.\" },\n  { \"role\": \"user\", \"content\": \"Brand: \" + $('Config').first().json.brandName + \", Visibility Score: \" + $('Config').first().json.visibilityScore + \"\\nCompetitor: \" + $json.name + \", Score: \" + $json.score + \"\\n\\nGenerate ONE sentence describing the competitive gap.\" }\n] }}"
+            }
+          ]
+        }
       },
-      "id": "4cd874f2-8770-4346-a28e-4697d4cdb8ea",
+      "id": "generate-gap-statement",
+      "name": "Generate Gap Statement",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        904,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const competitorData = $('Identify Competitors').all().map(i => i.json);\nconst gapResponses = $input.all().map(i => i.json);\n\nconst competitors = competitorData.map((comp, index) => ({\n  name: comp.name,\n  score: comp.score,\n  gap: gapResponses[index]?.choices?.[0]?.message?.content || 'Analysis unavailable.'\n}));\n\nreturn [{\n  json: {\n    competitor_1_name: competitors[0]?.name || null,\n    competitor_1_score: competitors[0]?.score || null,\n    competitor_1_gap: competitors[0]?.gap || null,\n    competitor_2_name: competitors[1]?.name || null,\n    competitor_2_score: competitors[1]?.score || null,\n    competitor_2_gap: competitors[1]?.gap || null,\n    competitor_3_name: competitors[2]?.name || null,\n    competitor_3_score: competitors[2]?.score || null,\n    competitor_3_gap: competitors[2]?.gap || null\n  }\n}];"
+      },
+      "id": "format-competitor-fields",
       "name": "Format Competitor Fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        512,
+        1104,
         288
       ]
     },
@@ -148,7 +246,7 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        704,
+        1304,
         288
       ],
       "credentials": {
@@ -159,7 +257,6 @@
       }
     }
   ],
-  "pinData": {},
   "connections": {
     "When Executed by Another Workflow": {
       "main": [
@@ -176,14 +273,47 @@
       "main": [
         [
           {
-            "node": "Generate Competitors",
+            "node": "Fetch Brand Config",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate Competitors": {
+    "Fetch Brand Config": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Analyses for Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Analyses for Run": {
+      "main": [
+        [
+          {
+            "node": "Identify Competitors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify Competitors": {
+      "main": [
+        [
+          {
+            "node": "Generate Gap Statement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Gap Statement": {
       "main": [
         [
           {

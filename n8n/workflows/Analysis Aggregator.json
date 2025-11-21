@@ -155,6 +155,115 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-status",
+              "leftValue": "={{ $json.allEnginesDone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1968,
+        208
+      ],
+      "id": "1120f8e8-4cc4-4db6-b64b-d84713dfe483",
+      "name": "All Engines Done?"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ZjdYn2YtHbYvfWs6",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ZjdYn2YtHbYvfWs6",
+          "cachedResultName": "Process Competitor Intelligence"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "visibilityScore": "={{ $('Aggregate Results').item.json.weightedVisibilityScore }}",
+            "runId": "={{ $('Config').first().json.runId }}",
+            "brandId": "={{ $('Config').first().json.brandId }}",
+            "brandName": "={{ $('Config').first().json.brandName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "runId",
+              "displayName": "runId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "brandId",
+              "displayName": "brandId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "brandName",
+              "displayName": "brandName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "visibilityScore",
+              "displayName": "visibilityScore",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2240,
+        32
+      ],
+      "id": "17c5a9bd-5fd8-46cc-8f0e-d763b1102970",
+      "name": "Call 'Process Competitor Intelligence'",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
         "operation": "update",
         "tableId": "analysis_runs",
         "filterType": "string",
@@ -163,19 +272,19 @@
           "fieldValues": [
             {
               "fieldId": "visibility_score",
-              "fieldValue": "={{ $json.weightedVisibilityScore }}"
+              "fieldValue": "={{ $('Aggregate Results').first().json.weightedVisibilityScore }}"
             },
             {
               "fieldId": "total_mentions",
-              "fieldValue": "={{ $json.totalMentions }}"
+              "fieldValue": "={{ $('Aggregate Results').first().json.totalMentions }}"
             },
             {
               "fieldId": "status",
-              "fieldValue": "={{ $json.allEnginesDone ? 'completed' : 'processing' }}"
+              "fieldValue": "={{ $('Aggregate Results').first().json.status }}"
             },
             {
               "fieldId": "completed_at",
-              "fieldValue": "={{ $json.allEnginesDone ? $now.toISO() : null }}"
+              "fieldValue": "={{ $('Aggregate Results').first().json.allEnginesDone ? $now.toISO() : null }}"
             },
             {
               "fieldId": "updated_at",
@@ -183,7 +292,43 @@
             },
             {
               "fieldId": "completion_percentage",
-              "fieldValue": "={{ $json.completionPercentage }}"
+              "fieldValue": "={{ $('Aggregate Results').first().json.completionPercentage }}"
+            },
+            {
+              "fieldId": "competitor_1_name",
+              "fieldValue": "={{ $json.competitor_1_name }}"
+            },
+            {
+              "fieldId": "competitor_1_score",
+              "fieldValue": "={{ $json.competitor_1_score }}"
+            },
+            {
+              "fieldId": "competitor_1_gap",
+              "fieldValue": "={{ $json.competitor_1_gap }}"
+            },
+            {
+              "fieldId": "competitor_2_name",
+              "fieldValue": "={{ $json.competitor_2_name }}"
+            },
+            {
+              "fieldId": "competitor_2_score",
+              "fieldValue": "={{ $json.competitor_2_score }}"
+            },
+            {
+              "fieldId": "competitor_2_gap",
+              "fieldValue": "={{ $json.competitor_2_gap }}"
+            },
+            {
+              "fieldId": "competitor_3_name",
+              "fieldValue": "={{ $json.competitor_3_name }}"
+            },
+            {
+              "fieldId": "competitor_3_score",
+              "fieldValue": "={{ $json.competitor_3_score }}"
+            },
+            {
+              "fieldId": "competitor_3_gap",
+              "fieldValue": "={{ $json.competitor_3_gap }}"
             }
           ]
         }
@@ -193,8 +338,8 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1920,
-        208
+        2512,
+        224
       ],
       "alwaysOutputData": true,
       "retryOnFail": true,
@@ -236,8 +381,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2160,
-        208
+        2752,
+        224
       ],
       "id": "30e27ed2-e65d-4598-9dda-b0ac2c06e2c1",
       "name": "Set Success Response"
@@ -306,8 +451,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1920,
-        416
+        2512,
+        432
       ],
       "id": "f192a5f1-1305-434a-a56a-9057f6139554",
       "name": "Set Database Error"
@@ -319,8 +464,8 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        2400,
-        208
+        2992,
+        224
       ]
     },
     {
@@ -440,6 +585,35 @@
       "main": [
         [
           {
+            "node": "All Engines Done?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Engines Done?": {
+      "main": [
+        [
+          {
+            "node": "Call 'Process Competitor Intelligence'",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Analysis Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Process Competitor Intelligence'": {
+      "main": [
+        [
+          {
             "node": "Update Analysis Run",
             "type": "main",
             "index": 0
@@ -525,7 +699,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "889f9136-e90f-4fe1-b8ed-8cfae0bc6cf1",
+  "versionId": "c674cd99-e117-45a9-af53-f1ed26d6b0e2",
   "meta": {
     "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
   },
