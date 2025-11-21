@@ -58,6 +58,7 @@ export function RunAnalysisButton({
     setIsLoading(true);
 
     try {
+      // Call success callback immediately to show progress bar
       // Trigger n8n workflow
       const runId = await triggerAnalysis({
         brandId,
@@ -66,15 +67,12 @@ export function RunAnalysisButton({
         userId,
       });
 
-      // Toast removed per user request - message shown below button instead
-
-      // Call success callback
       if (onAnalysisStarted) {
         onAnalysisStarted(runId);
       }
 
-      // Keep loading state for minimum 2 seconds for better UX feedback
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Keep loading state for minimum 3 seconds for better UX feedback
+      await new Promise(resolve => setTimeout(resolve, 3000));
     } catch (error) {
       console.error('Failed to start analysis:', error);
 
@@ -86,8 +84,10 @@ export function RunAnalysisButton({
       toast.error('Analysis failed to start', {
         description: errorMessage,
       });
-    } finally {
       setIsLoading(false);
+    } finally {
+      // Keep button loading for the full duration
+      setTimeout(() => setIsLoading(false), 100);
     }
   };
 
