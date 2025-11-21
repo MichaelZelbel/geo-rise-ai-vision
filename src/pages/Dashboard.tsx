@@ -71,6 +71,13 @@ const Dashboard = () => {
         score: run.visibility_score || 0
       }));
 
+      // Extract competitor data from flattened columns
+      const competitors = [
+        { name: latestRun.competitor_1_name, score: latestRun.competitor_1_score, gap: latestRun.competitor_1_gap },
+        { name: latestRun.competitor_2_name, score: latestRun.competitor_2_score, gap: latestRun.competitor_2_gap },
+        { name: latestRun.competitor_3_name, score: latestRun.competitor_3_score, gap: latestRun.competitor_3_gap },
+      ].filter(c => c.name); // Filter out empty competitors
+
       return {
         date: latestRun.completed_at || latestRun.created_at,
         score: currentScore,
@@ -80,6 +87,7 @@ const Dashboard = () => {
         totalQueries: latestRun.total_queries || 20,
         completionPercentage: latestRun.completion_percentage || 0,
         status: latestRun.status,
+        competitors: competitors
       };
     },
     enabled: !!brand?.id,
@@ -358,7 +366,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column - 3 stacked cards */}
               <div className="space-y-6">
-                <CompetitorIntelligenceCard isPro={isPro} />
+                <CompetitorIntelligenceCard isPro={isPro} competitorData={lastAnalysisRun?.competitors} />
                 <ActionPlanCard />
                 <SemanticAnalysisCard />
               </div>

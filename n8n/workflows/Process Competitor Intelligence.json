@@ -1,0 +1,219 @@
+{
+  "name": "Process Competitor Intelligence",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "runId"
+            },
+            {
+              "name": "brandId"
+            },
+            {
+              "name": "brandName"
+            },
+            {
+              "name": "visibilityScore"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9954fde4-d215-4213-bc6c-7bc60bfd0a60",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $('When Executed by Another Workflow').first().json.runId }}"
+            },
+            {
+              "id": "config-brand-id",
+              "name": "brandId",
+              "type": "string",
+              "value": "={{ $('When Executed by Another Workflow').first().json.brandId }}"
+            },
+            {
+              "id": "config-brand-name",
+              "name": "brandName",
+              "type": "string",
+              "value": "={{ $('When Executed by Another Workflow').first().json.brandName }}"
+            },
+            {
+              "id": "config-visibility-score",
+              "name": "visibilityScore",
+              "type": "number",
+              "value": "={{ $('When Executed by Another Workflow').first().json.visibilityScore }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b8552244-8ed6-4f04-9c0d-82a6347d6b4e",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple placeholder implementation for competitor identification\n// Returns 3 generic competitors with scores\n\nreturn [\n  { json: { name: 'Competitor A', score: 80, gap: 'Competitor A has higher visibility in search results.' } },\n  { json: { name: 'Competitor B', score: 75, gap: 'Competitor B has stronger brand recognition.' } },\n  { json: { name: 'Competitor C', score: 70, gap: 'Competitor C has better content strategy.' } }\n];"
+      },
+      "id": "9edc85f0-adda-4043-80e3-b20efa160416",
+      "name": "Generate Competitors",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all competitors and format as flat fields\nconst competitors = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    competitor_1_name: competitors[0]?.name || null,\n    competitor_1_score: competitors[0]?.score || null,\n    competitor_1_gap: competitors[0]?.gap || null,\n    competitor_2_name: competitors[1]?.name || null,\n    competitor_2_score: competitors[1]?.score || null,\n    competitor_2_gap: competitors[1]?.gap || null,\n    competitor_3_name: competitors[2]?.name || null,\n    competitor_3_score: competitors[2]?.score || null,\n    competitor_3_gap: competitors[2]?.gap || null\n  }\n}];"
+      },
+      "id": "dead97d3-2ff3-488a-a23f-404706384e2a",
+      "name": "Format Competitor Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "analysis_runs",
+        "filterType": "string",
+        "filterString": "=run_id=eq.{{ $('Config').first().json.runId }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "competitor_1_name",
+              "fieldValue": "={{ $json.competitor_1_name }}"
+            },
+            {
+              "fieldId": "competitor_1_score",
+              "fieldValue": "={{ $json.competitor_1_score }}"
+            },
+            {
+              "fieldId": "competitor_1_gap",
+              "fieldValue": "={{ $json.competitor_1_gap }}"
+            },
+            {
+              "fieldId": "competitor_2_name",
+              "fieldValue": "={{ $json.competitor_2_name }}"
+            },
+            {
+              "fieldId": "competitor_2_score",
+              "fieldValue": "={{ $json.competitor_2_score }}"
+            },
+            {
+              "fieldId": "competitor_2_gap",
+              "fieldValue": "={{ $json.competitor_2_gap }}"
+            },
+            {
+              "fieldId": "competitor_3_name",
+              "fieldValue": "={{ $json.competitor_3_name }}"
+            },
+            {
+              "fieldId": "competitor_3_score",
+              "fieldValue": "={{ $json.competitor_3_score }}"
+            },
+            {
+              "fieldId": "competitor_3_gap",
+              "fieldValue": "={{ $json.competitor_3_gap }}"
+            }
+          ]
+        }
+      },
+      "id": "9b83e60a-ea0d-429c-abef-e1e6f174dba7",
+      "name": "Update Competitor Data",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xjyTBcrvj3X5rWEu",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Generate Competitors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Competitors": {
+      "main": [
+        [
+          {
+            "node": "Format Competitor Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Competitor Fields": {
+      "main": [
+        [
+          {
+            "node": "Update Competitor Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d62f4b68-b965-405e-bafc-2d5b2675fa2d",
+  "meta": {
+    "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
+  },
+  "id": "dSEEKsDnvV4inHba",
+  "tags": []
+}
