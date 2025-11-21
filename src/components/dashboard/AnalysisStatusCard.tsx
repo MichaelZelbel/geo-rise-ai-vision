@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,13 @@ interface AnalysisStatusCardProps {
 const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, completionPercentage, analysisStatus }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
   const [localAnalysisStarted, setLocalAnalysisStarted] = useState(false);
+  
+  // Reset local state when server confirms analysis is running or completed
+  useEffect(() => {
+    if (analysisStatus === 'processing' || analysisStatus === 'completed' || analysisStatus === 'failed') {
+      setLocalAnalysisStarted(false);
+    }
+  }, [analysisStatus]);
   
   // Calculate display percentage: completion_percentage + 5, capped at 100
   const displayPercentage = completionPercentage 
