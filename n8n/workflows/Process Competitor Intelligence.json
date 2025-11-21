@@ -23,10 +23,10 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        0,
-        0
+        -112,
+        288
       ],
-      "id": "9954fde4-d215-4213-bc6c-7bc60bfd0a60",
+      "id": "b5e1d7ef-f1a4-4077-856d-8e05ecfd41d0",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -61,39 +61,39 @@
         },
         "options": {}
       },
-      "id": "b8552244-8ed6-4f04-9c0d-82a6347d6b4e",
+      "id": "3f371fee-006a-451c-ba06-af539823e933",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        208,
-        0
+        112,
+        288
       ]
     },
     {
       "parameters": {
         "jsCode": "// Simple placeholder implementation for competitor identification\n// Returns 3 generic competitors with scores\n\nreturn [\n  { json: { name: 'Competitor A', score: 80, gap: 'Competitor A has higher visibility in search results.' } },\n  { json: { name: 'Competitor B', score: 75, gap: 'Competitor B has stronger brand recognition.' } },\n  { json: { name: 'Competitor C', score: 70, gap: 'Competitor C has better content strategy.' } }\n];"
       },
-      "id": "9edc85f0-adda-4043-80e3-b20efa160416",
+      "id": "6c81025a-b9b7-4f9c-bc7b-85b26d1474c9",
       "name": "Generate Competitors",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        400,
-        0
+        304,
+        288
       ]
     },
     {
       "parameters": {
         "jsCode": "// Collect all competitors and format as flat fields\nconst competitors = $input.all().map(item => item.json);\n\nreturn [{\n  json: {\n    competitor_1_name: competitors[0]?.name || null,\n    competitor_1_score: competitors[0]?.score || null,\n    competitor_1_gap: competitors[0]?.gap || null,\n    competitor_2_name: competitors[1]?.name || null,\n    competitor_2_score: competitors[1]?.score || null,\n    competitor_2_gap: competitors[1]?.gap || null,\n    competitor_3_name: competitors[2]?.name || null,\n    competitor_3_score: competitors[2]?.score || null,\n    competitor_3_gap: competitors[2]?.gap || null\n  }\n}];"
       },
-      "id": "dead97d3-2ff3-488a-a23f-404706384e2a",
+      "id": "4cd874f2-8770-4346-a28e-4697d4cdb8ea",
       "name": "Format Competitor Fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        608,
-        0
+        512,
+        288
       ]
     },
     {
@@ -143,13 +143,13 @@
           ]
         }
       },
-      "id": "9b83e60a-ea0d-429c-abef-e1e6f174dba7",
+      "id": "ed3e50da-ceba-4e3d-8dae-3be5c6a91708",
       "name": "Update Competitor Data",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        800,
-        0
+        704,
+        288
       ],
       "credentials": {
         "supabaseApi": {
@@ -210,10 +210,10 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "d62f4b68-b965-405e-bafc-2d5b2675fa2d",
+  "versionId": "f415fdd4-71ce-457e-a538-2766f28be8c8",
   "meta": {
     "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
   },
-  "id": "dSEEKsDnvV4inHba",
+  "id": "ZjdYn2YtHbYvfWs6",
   "tags": []
 }
