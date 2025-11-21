@@ -81,15 +81,15 @@ const AnalysisDetailsDialog = ({ runId, brandId, open, onClose, userPlan }: Anal
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 rounded-lg border border-border bg-card">
                 <p className="text-sm text-muted-foreground mb-1">Total Queries</p>
-                <p className="text-2xl font-bold text-foreground">{totalQueries}</p>
+                <p className="text-2xl font-bold">{totalQueries}</p>
               </div>
               <div className="p-4 rounded-lg border border-border bg-card">
                 <p className="text-sm text-muted-foreground mb-1">Mentions Found</p>
-                <p className="text-2xl font-bold text-foreground">{mentions.length}</p>
+                <p className="text-2xl font-bold">{mentions.length}</p>
               </div>
               <div className="p-4 rounded-lg border border-border bg-card">
                 <p className="text-sm text-muted-foreground mb-1">Mention Rate</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold">
                   {Math.round((mentions.length / totalQueries) * 100)}%
                 </p>
               </div>
@@ -97,11 +97,11 @@ const AnalysisDetailsDialog = ({ runId, brandId, open, onClose, userPlan }: Anal
 
             {/* AI Engine Breakdown */}
             <div>
-              <h3 className="font-semibold text-foreground mb-3">AI Engine Breakdown</h3>
+              <h3 className="font-semibold mb-3">AI Engine Breakdown</h3>
               <div className="space-y-2">
                 {Object.entries(engineBreakdown).map(([engine, stats]: [string, any]) => (
                   <div key={engine} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <span className="font-medium text-foreground capitalize">{engine}</span>
+                    <span className="font-medium capitalize">{engine}</span>
                     <div className="flex items-center gap-4">
                       <span className="text-sm text-muted-foreground">
                         {stats.mentioned}/{stats.total} queries
@@ -117,7 +117,7 @@ const AnalysisDetailsDialog = ({ runId, brandId, open, onClose, userPlan }: Anal
 
             {/* Query Results */}
             <div className="relative">
-              <h3 className="font-semibold text-foreground mb-3">Query Results</h3>
+              <h3 className="font-semibold mb-3">Query Results</h3>
               {isPro ? (
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
@@ -184,7 +184,7 @@ const AnalysisDetailsDialog = ({ runId, brandId, open, onClose, userPlan }: Anal
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-card border border-border rounded-lg p-6 text-center shadow-lg">
                       <Lock className="h-12 w-12 mx-auto mb-3 text-primary" />
-                      <h4 className="font-semibold text-foreground mb-2">Upgrade for Full Query Breakdown</h4>
+                      <h4 className="font-semibold mb-2">Upgrade for Full Query Breakdown</h4>
                       <p className="text-sm text-muted-foreground mb-4">
                         See detailed results for all queries
                       </p>
