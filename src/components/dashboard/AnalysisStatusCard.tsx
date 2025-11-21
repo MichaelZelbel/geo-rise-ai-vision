@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -21,14 +22,22 @@ interface AnalysisStatusCardProps {
 
 const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, userId, onAnalysisStarted, lastRunDate, lastRunScore, lastRunMentions, completionPercentage, analysisStatus }: AnalysisStatusCardProps) => {
   const navigate = useNavigate();
+  const [localAnalysisStarted, setLocalAnalysisStarted] = useState(false);
   
   // Calculate display percentage: completion_percentage + 5, capped at 100
   const displayPercentage = completionPercentage 
     ? Math.min(completionPercentage + 5, 100) 
     : 5;
   
-  // Show progress bar when analysis is running (based purely on status)
-  const isAnalysisRunning = analysisStatus === 'pending' || analysisStatus === 'processing';
+  // Show progress bar when analysis is running (either from server status OR locally started)
+  const isAnalysisRunning = analysisStatus === 'pending' || analysisStatus === 'processing' || localAnalysisStarted;
+  
+  const handleAnalysisStarted = (runId: string) => {
+    setLocalAnalysisStarted(true);
+    if (onAnalysisStarted) {
+      onAnalysisStarted(runId);
+    }
+  };
 
   return (
     <div className="bg-card rounded-xl p-6 border border-primary/20 shadow-sm">
@@ -53,7 +62,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
                 brandName={brandName}
                 topic={topic}
                 userId={userId}
-                onAnalysisStarted={onAnalysisStarted}
+                onAnalysisStarted={handleAnalysisStarted}
                 className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 w-full"
                 isAnalysisRunning={isAnalysisRunning}
               />
@@ -119,7 +128,7 @@ const AnalysisStatusCard = ({ hasAnalysis, isPro, brandId, brandName, topic, use
                     brandName={brandName}
                     topic={topic}
                     userId={userId}
-                    onAnalysisStarted={onAnalysisStarted}
+                    onAnalysisStarted={handleAnalysisStarted}
                     variant="outline"
                     className="w-full"
                     isAnalysisRunning={isAnalysisRunning}
