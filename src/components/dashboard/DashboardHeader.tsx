@@ -37,7 +37,7 @@ const DashboardHeader = ({ userEmail, userPlan }: DashboardHeaderProps) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/dashboard" className="flex items-center">
-              <img src={headerLogo} alt="GEORISE" className="h-10" />
+              <img src={headerLogo} alt="GEORISE" className="h-10 -ml-1.5" />
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               {userPlan === 'free' && (
