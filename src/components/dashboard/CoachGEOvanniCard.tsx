@@ -288,7 +288,7 @@ const CoachGEOvanniCard = ({ brandId, userPlan, className }: CoachGEOvanniCardPr
 
       {/* Fullscreen Dialog */}
       <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0" hideCloseButton>
           <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
