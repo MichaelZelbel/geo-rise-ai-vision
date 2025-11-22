@@ -23,10 +23,10 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -112,
-        288
+        -896,
+        16
       ],
-      "id": "b5e1d7ef-f1a4-4077-856d-8e05ecfd41d0",
+      "id": "9f85f627-b0f3-4b4e-b9e4-687bf5f8baa3",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -37,37 +37,37 @@
               "id": "config-run-id",
               "name": "runId",
               "type": "string",
-              "value": "={{ $('When Executed by Another Workflow').first().json.runId }}"
+              "value": "={{ $json.runId || 'run_1763762747330_bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
             },
             {
               "id": "config-brand-id",
               "name": "brandId",
               "type": "string",
-              "value": "={{ $('When Executed by Another Workflow').first().json.brandId }}"
+              "value": "={{ $json.brandId || 'bb64f5e7-23e3-48ee-be1d-698201ffad4f' }}"
             },
             {
               "id": "config-brand-name",
               "name": "brandName",
               "type": "string",
-              "value": "={{ $('When Executed by Another Workflow').first().json.brandName }}"
+              "value": "={{ $json.brandName || 'Richard Branson' }}"
             },
             {
               "id": "config-visibility-score",
               "name": "visibilityScore",
               "type": "number",
-              "value": "={{ $('When Executed by Another Workflow').first().json.visibilityScore }}"
+              "value": "={{ $json.visibilityScore || 44.67 }}"
             }
           ]
         },
         "options": {}
       },
-      "id": "3f371fee-006a-451c-ba06-af539823e933",
+      "id": "9a365542-1a00-4ffd-a662-879ba5ebdc3b",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        112,
-        288
+        -672,
+        16
       ]
     },
     {
@@ -78,21 +78,18 @@
           "conditions": [
             {
               "keyName": "id",
-              "condition": "eq",
               "keyValue": "={{ $('Config').first().json.brandId }}"
             }
           ]
-        },
-        "returnAll": false,
-        "columns": "competitor_1,competitor_2,competitor_3"
+        }
       },
-      "id": "fetch-brand-config",
+      "id": "ae597f63-370b-4792-88c5-5459af9a7ee1",
       "name": "Fetch Brand Config",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        304,
-        288
+        -480,
+        16
       ],
       "credentials": {
         "supabaseApi": {
@@ -105,6 +102,7 @@
       "parameters": {
         "operation": "getAll",
         "tableId": "analyses",
+        "limit": 100,
         "filters": {
           "conditions": [
             {
@@ -113,16 +111,15 @@
               "keyValue": "={{ $('Config').first().json.runId }}"
             }
           ]
-        },
-        "limit": 100
+        }
       },
-      "id": "fetch-analyses",
+      "id": "d462dd3b-e5e8-4c3f-8f8e-0627cf69cff6",
       "name": "Fetch All Analyses for Run",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        504,
-        288
+        -272,
+        16
       ],
       "credentials": {
         "supabaseApi": {
@@ -133,65 +130,28 @@
     },
     {
       "parameters": {
-        "jsCode": "const brandConfig = $('Fetch Brand Config').first().json;\nconst analyses = $input.all().map(i => i.json);\nconst mainBrandName = $('Config').first().json.brandName;\n\n// Helper to normalize strings\nconst normalize = (s) => s ? s.toLowerCase().trim() : '';\nconst normalizedMainBrand = normalize(mainBrandName);\n\n// User defined competitors\nlet competitors = [];\nif (brandConfig.competitor_1) competitors.push({ name: brandConfig.competitor_1, score: 0, origin: 'user' });\nif (brandConfig.competitor_2) competitors.push({ name: brandConfig.competitor_2, score: 0, origin: 'user' });\nif (brandConfig.competitor_3) competitors.push({ name: brandConfig.competitor_3, score: 0, origin: 'user' });\n\n// Analyze mentions to calculate scores or find competitors\nconst mentionCounts = {};\n\nanalyses.forEach(analysis => {\n  const text = (analysis.full_response || '') + ' ' + (analysis.context || '');\n  \n  // If user competitors are defined, search for them specifically\n  if (competitors.length > 0) {\n    competitors.forEach(comp => {\n      const regex = new RegExp(`\\\\b${comp.name}\\\\b`, 'gi');\n      const matches = text.match(regex);\n      if (matches) {\n        comp.score += matches.length * 10;\n      }\n    });\n  } else {\n    // Auto-discovery mode (simplified)\n    const words = text.match(/\\b[A-Z][a-zA-Z0-9]+\\b/g) || [];\n    words.forEach(word => {\n      const norm = normalize(word);\n      if (norm !== normalizedMainBrand && norm.length > 3) {\n        mentionCounts[word] = (mentionCounts[word] || 0) + 1;\n      }\n    });\n  }\n});\n\nif (competitors.length === 0) {\n  competitors = Object.entries(mentionCounts)\n    .map(([name, count]) => ({ name, score: count * 5, origin: 'auto' }))\n    .sort((a, b) => b.score - a.score)\n    .slice(0, 3);\n    \n  if (competitors.length === 0) {\n     competitors = [\n       { name: 'Competitor A', score: 50, origin: 'placeholder' },\n       { name: 'Competitor B', score: 40, origin: 'placeholder' },\n       { name: 'Competitor C', score: 30, origin: 'placeholder' }\n     ];\n  }\n}\n\ncompetitors.forEach(c => {\n  c.score = Math.min(100, Math.max(10, c.score));\n});\n\nreturn competitors.map(c => ({ json: c }));"
+        "jsCode": "const brandConfig = $('Fetch Brand Config').first().json;\nconst analyses = $input.all().map(i => i.json);\n\n// Aggregate text from all analyses\nconst aggregated_text = analyses.map(a => (a.full_response || '') + ' ' + (a.context || '')).join('\\n\\n').slice(0, 20000);\n\n// Identify fixed slots (user defined and not 'auto')\nconst competitor_1_fixed = (brandConfig.competitor_1 && brandConfig.competitor_1.toLowerCase() !== 'auto') ? brandConfig.competitor_1 : null;\nconst competitor_2_fixed = (brandConfig.competitor_2 && brandConfig.competitor_2.toLowerCase() !== 'auto') ? brandConfig.competitor_2 : null;\nconst competitor_3_fixed = (brandConfig.competitor_3 && brandConfig.competitor_3.toLowerCase() !== 'auto') ? brandConfig.competitor_3 : null;\n\nreturn [{\n  json: {\n    aggregated_text,\n    competitor_1_fixed,\n    competitor_2_fixed,\n    competitor_3_fixed\n  }\n}];"
       },
-      "id": "identify-competitors",
-      "name": "Identify Competitors",
+      "id": "17f099e5-853d-4083-95d3-3b595256e8b1",
+      "name": "Consolidate Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        704,
-        288
+        -80,
+        16
       ]
     },
     {
       "parameters": {
-        "url": "https://ai.gateway.lovable.dev/v1/chat/completions",
-        "method": "POST",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer {{ $env.LOVABLE_API_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "model",
-              "value": "google/gemini-2.0-flash-exp"
-            },
-            {
-              "name": "messages",
-              "value": "={{ [\n  { \"role\": \"system\", \"content\": \"You are a competitive analysis expert. Generate a one-sentence gap statement comparing brand visibility.\" },\n  { \"role\": \"user\", \"content\": \"Brand: \" + $('Config').first().json.brandName + \", Visibility Score: \" + $('Config').first().json.visibilityScore + \"\\nCompetitor: \" + $json.name + \", Score: \" + $json.score + \"\\n\\nGenerate ONE sentence describing the competitive gap.\" }\n] }}"
-            }
-          ]
-        }
+        "jsCode": "const aiOutput = $input.first().json.output;\nlet competitors = [];\n\ntry {\n  // Parse AI output if it's a string, or use directly if object\n  competitors = typeof aiOutput === 'string' ? JSON.parse(aiOutput) : aiOutput;\n} catch (e) {\n  competitors = [];\n}\n\n// Helper to get comp by slot\nconst getComp = (slot) => competitors.find(c => c.slot === slot) || {};\n\nreturn [{\n  json: {\n    competitor_1_name: getComp(1).name || null,\n    competitor_1_score: getComp(1).score || null,\n    competitor_1_gap: getComp(1).gap || null,\n    competitor_2_name: getComp(2).name || null,\n    competitor_2_score: getComp(2).score || null,\n    competitor_2_gap: getComp(2).gap || null,\n    competitor_3_name: getComp(3).name || null,\n    competitor_3_score: getComp(3).score || null,\n    competitor_3_gap: getComp(3).gap || null\n  }\n}];"
       },
-      "id": "generate-gap-statement",
-      "name": "Generate Gap Statement",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        904,
-        288
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const competitorData = $('Identify Competitors').all().map(i => i.json);\nconst gapResponses = $input.all().map(i => i.json);\n\nconst competitors = competitorData.map((comp, index) => ({\n  name: comp.name,\n  score: comp.score,\n  gap: gapResponses[index]?.choices?.[0]?.message?.content || 'Analysis unavailable.'\n}));\n\nreturn [{\n  json: {\n    competitor_1_name: competitors[0]?.name || null,\n    competitor_1_score: competitors[0]?.score || null,\n    competitor_1_gap: competitors[0]?.gap || null,\n    competitor_2_name: competitors[1]?.name || null,\n    competitor_2_score: competitors[1]?.score || null,\n    competitor_2_gap: competitors[1]?.gap || null,\n    competitor_3_name: competitors[2]?.name || null,\n    competitor_3_score: competitors[2]?.score || null,\n    competitor_3_gap: competitors[2]?.gap || null\n  }\n}];"
-      },
-      "id": "format-competitor-fields",
+      "id": "f7f9dde6-f943-46dd-a5db-86bd228ecc1a",
       "name": "Format Competitor Fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1104,
-        288
+        640,
+        16
       ]
     },
     {
@@ -241,13 +201,13 @@
           ]
         }
       },
-      "id": "ed3e50da-ceba-4e3d-8dae-3be5c6a91708",
+      "id": "670bbb88-9fcc-4793-bc41-5e3cadd8bb22",
       "name": "Update Competitor Data",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1304,
-        288
+        864,
+        16
       ],
       "credentials": {
         "supabaseApi": {
@@ -255,8 +215,110 @@
           "name": "Supabase account"
         }
       }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        240
+      ],
+      "id": "d6f94a3a-883e-471e-9186-7cb6303d2116",
+      "name": "Manual Trigger for Testing"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  { \"slot\": 1, \"name\": \"Competitor Name\", \"score\": 85, \"gap\": \"Specific insight about the gap...\" },\n  { \"slot\": 2, \"name\": \"Competitor Name\", \"score\": 65, \"gap\": \"Specific insight about the gap...\" },\n  { \"slot\": 3, \"name\": \"Competitor Name\", \"score\": 40, \"gap\": \"Specific insight about the gap...\" }\n]",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        224
+      ],
+      "id": "bd6982c6-f66e-443e-87f6-5177f71c41c0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-sonnet-4.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        192,
+        224
+      ],
+      "id": "056cd047-73de-4707-aee3-07107676454f",
+      "name": "Analysis LLM",
+      "credentials": {
+        "openRouterApi": {
+          "id": "7vKwFltYz7wxFVCU",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        416,
+        384
+      ],
+      "id": "4533fb12-9f90-429c-b5c7-c4186e1fda73",
+      "name": "Parser LLM",
+      "credentials": {
+        "openRouterApi": {
+          "id": "7vKwFltYz7wxFVCU",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Target Brand: {{ $('Config').first().json.brandName }}\nTarget Brand Visibility Score: {{ $('Config').first().json.visibilityScore }}% (Baseline)\n\nContext (LLM responses to queries):\n{{ $json.aggregated_text }}\n\nExisting Competitors:\n1. {{ $json.competitor_1_fixed || \"AUTO\" }}\n2. {{ $json.competitor_2_fixed || \"AUTO\" }}\n3. {{ $json.competitor_3_fixed || \"AUTO\" }}\n\nInstructions:\n1. **Identify Competitors**:\n   - Scan the Context for brands that appear as direct alternatives to {{ $('Config').first().json.brandName }}.\n   - For \"AUTO\" slots, select the top brands with the highest presence (mentions, recommendations, top rankings).\n   - Ignore the Target Brand itself.\n\n2. **Calculate Relative Visibility Scores**:\n   - The Target Brand has a score of {{ $('Config').first().json.visibilityScore }}.\n   - Estimate each competitor's score RELATIVE to this baseline.\n   - Logic: If Competitor X appears roughly as often as Target Brand, give them a similar score. If they dominate the results, give them a higher score (max 100). If they are barely mentioned, give them a lower score (e.g., < 10).\n   - **CRITICAL**: Scores must be realistic estimates based *only* on the provided text.\n\n3. **Gap Analysis**:\n   - Write ONE punchy, witty, and slightly cheeky sentence per competitor.\n   - Focus strictly on what they are DOING that you are NOT (or vice versa).\n   - Make it personal and comparative. Examples: \"AI thinks he is more entertaining than you\", \"Cited by Forbes, you aren't yet\".\n   - **Tone Check**: Keep it professional but playful. Do not be mean, morbid, or insulting. We want the user to chuckle, not feel bad.\n   - AVOID generic descriptions.\n\nOutput strictly valid JSON, nothing else around that JSON:\n[\n  { \"slot\": 1, \"name\": \"Competitor Name\", \"score\": 85, \"gap\": \"Specific insight about the gap...\" },\n  { \"slot\": 2, \"name\": \"Competitor Name\", \"score\": 65, \"gap\": \"Specific insight about the gap...\" },\n  { \"slot\": 3, \"name\": \"Competitor Name\", \"score\": 40, \"gap\": \"Specific insight about the gap...\" }\n]",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a specialized AI Visibility Analyst. Your job is to extract competitive intelligence from search engine results. You must identify the strongest competitors based on their 'Share of Voice' in the provided text and calculate precise visibility scores relative to a baseline.\nUse your web search tool if you have to find the latest information on any brand, person or anything else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        192,
+        16
+      ],
+      "id": "d6bbc0ac-fd9f-4c93-83db-79133031ceb1",
+      "name": "Visibility Analyst Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        304,
+        224
+      ],
+      "id": "501317f6-9cda-445a-9783-2ceb67e4cc74",
+      "name": "Web Search",
+      "credentials": {
+        "serpApi": {
+          "id": "8n607KMw9rSYtVsp",
+          "name": "SerpAPI account"
+        }
+      }
     }
   ],
+  "pinData": {},
   "connections": {
     "When Executed by Another Workflow": {
       "main": [
@@ -295,29 +357,18 @@
       "main": [
         [
           {
-            "node": "Identify Competitors",
+            "node": "Consolidate Context",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Identify Competitors": {
+    "Consolidate Context": {
       "main": [
         [
           {
-            "node": "Generate Gap Statement",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate Gap Statement": {
-      "main": [
-        [
-          {
-            "node": "Format Competitor Fields",
+            "node": "Visibility Analyst Agent",
             "type": "main",
             "index": 0
           }
@@ -334,14 +385,81 @@
           }
         ]
       ]
+    },
+    "Manual Trigger for Testing": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Visibility Analyst Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analysis LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Visibility Analyst Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Visibility Analyst Agent": {
+      "main": [
+        [
+          {
+            "node": "Format Competitor Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Visibility Analyst Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f415fdd4-71ce-457e-a538-2766f28be8c8",
+  "versionId": "d788035e-bd97-4a24-b599-7a40bb5d9fbb",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "02bba7aac379f6e7cacf7ad50786592b16e7ca5dbfbf71b3b9646d979cc00f6e"
   },
   "id": "ZjdYn2YtHbYvfWs6",
