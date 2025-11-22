@@ -86,4 +86,23 @@ All colors MUST be HSL.
       box-shadow: 0 10px 30px -5px hsl(217.2 91.2% 59.8% / 0.4), 0 4px 8px -2px hsl(262.1 83.3% 57.8% / 0.3);
     }
   }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #070b15;
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0f172a;
+  }
 }
