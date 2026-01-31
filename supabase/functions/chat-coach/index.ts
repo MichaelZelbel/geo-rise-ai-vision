@@ -269,16 +269,6 @@ Do not:
         
         // Update user's allowance period (increment tokens_used)
         const now = new Date().toISOString();
-        await supabaseAdmin
-          .from('ai_allowance_periods')
-          .update({
-            tokens_used: supabaseAdmin.rpc('', {}), // Can't use rpc here, use raw SQL approach
-          })
-          .eq('user_id', user.id)
-          .lte('period_start', now)
-          .gte('period_end', now);
-        
-        // Use a direct increment approach
         const { data: currentPeriod } = await supabaseAdmin
           .from('ai_allowance_periods')
           .select('id, tokens_used')
