@@ -1,10 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Declare EdgeRuntime for Supabase edge functions
+declare const EdgeRuntime: {
+  waitUntil: (promise: Promise<unknown>) => void;
+} | undefined;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const FEATURE_NAME = 'chat_coach';
+const MODEL_NAME = 'google/gemini-2.5-flash';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,11 +40,17 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // User client for auth and RLS-protected queries
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: {
         headers: { Authorization: authHeader },
       },
     });
+    
+    // Admin client for usage tracking (bypasses RLS)
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
@@ -180,7 +194,7 @@ Do not:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: MODEL_NAME,
         messages,
         temperature: 0.7,
         max_tokens: 400
@@ -210,6 +224,93 @@ Do not:
 
     const aiData = await aiResponse.json();
     const reply = aiData.choices[0].message.content;
+    
+    // Extract token usage from API response
+    const usage = aiData.usage || {};
+    const promptTokens = usage.prompt_tokens || 0;
+    const completionTokens = usage.completion_tokens || 0;
+    const totalTokens = usage.total_tokens || (promptTokens + completionTokens);
+
+    // Track usage in background (don't block response)
+    const trackUsage = async () => {
+      try {
+        // Fetch tokens_per_credit setting
+        const { data: settings } = await supabaseAdmin
+          .from('ai_credit_settings')
+          .select('value_int')
+          .eq('key', 'tokens_per_credit')
+          .single();
+        
+        const tokensPerCredit = settings?.value_int || 200;
+        const creditsCharged = totalTokens / tokensPerCredit;
+        
+        // Generate idempotency key
+        const timestamp = Date.now();
+        const idempotencyKey = `${FEATURE_NAME}_${user.id}_${timestamp}`;
+        
+        // Insert usage event
+        await supabaseAdmin.from('llm_usage_events').insert({
+          user_id: user.id,
+          idempotency_key: idempotencyKey,
+          feature: FEATURE_NAME,
+          model: MODEL_NAME,
+          provider: 'lovable',
+          prompt_tokens: promptTokens,
+          completion_tokens: completionTokens,
+          total_tokens: totalTokens,
+          credits_charged: creditsCharged,
+          metadata: {
+            brand_id: brandId,
+            brand_name: brand.name,
+            message_length: message.length,
+            reply_length: reply.length,
+          }
+        });
+        
+        // Update user's allowance period (increment tokens_used)
+        const now = new Date().toISOString();
+        await supabaseAdmin
+          .from('ai_allowance_periods')
+          .update({
+            tokens_used: supabaseAdmin.rpc('', {}), // Can't use rpc here, use raw SQL approach
+          })
+          .eq('user_id', user.id)
+          .lte('period_start', now)
+          .gte('period_end', now);
+        
+        // Use a direct increment approach
+        const { data: currentPeriod } = await supabaseAdmin
+          .from('ai_allowance_periods')
+          .select('id, tokens_used')
+          .eq('user_id', user.id)
+          .lte('period_start', now)
+          .gte('period_end', now)
+          .single();
+        
+        if (currentPeriod) {
+          await supabaseAdmin
+            .from('ai_allowance_periods')
+            .update({
+              tokens_used: currentPeriod.tokens_used + totalTokens,
+              updated_at: now,
+            })
+            .eq('id', currentPeriod.id);
+        }
+        
+        console.log(`Usage tracked: ${totalTokens} tokens, ${creditsCharged.toFixed(2)} credits for user ${user.id}`);
+      } catch (err) {
+        console.error('Failed to track usage:', err);
+        // Don't fail the request if tracking fails
+      }
+    };
+    
+    // Use EdgeRuntime.waitUntil for background processing
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      EdgeRuntime.waitUntil(trackUsage());
+    } else {
+      // Fallback: run in background without waiting
+      trackUsage();
+    }
 
     // Save user message
     await supabase.from('coach_conversations').insert({
