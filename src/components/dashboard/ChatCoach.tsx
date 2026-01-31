@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAICreditsGate } from "@/hooks/useAICreditsGate";
 import { Bot, Send, X, Minimize2, Sparkles, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -28,6 +29,7 @@ const ChatCoach = ({ brandId, userPlan }: ChatCoachProps) => {
   const [messageCount, setMessageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { checkCredits, refetchCredits } = useAICreditsGate();
   const navigate = useNavigate();
 
   const isPro = userPlan === "pro" || userPlan === "giftedPro" || userPlan === "business" || userPlan === "giftedAgency";
@@ -87,6 +89,9 @@ const ChatCoach = ({ brandId, userPlan }: ChatCoachProps) => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    // Check credits before proceeding
+    if (!checkCredits()) return;
+
     const userMessage: Message = {
       role: "user",
       content: input.trim(),
@@ -133,6 +138,9 @@ const ChatCoach = ({ brandId, userPlan }: ChatCoachProps) => {
 
       setMessages((prev) => [...prev, assistantMessage]);
       setMessageCount((prev) => prev + 1);
+      
+      // Refetch credits after successful AI call
+      refetchCredits();
     } catch (error: any) {
       console.error("Chat error:", error);
       toast({
