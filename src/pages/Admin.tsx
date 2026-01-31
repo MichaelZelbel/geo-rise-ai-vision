@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AICreditSettingsSection } from "@/components/admin/AICreditSettingsSection";
+import { UserManagementSection } from "@/components/admin/UserManagementSection";
 import { Shield, Loader2 } from "lucide-react";
 
 export default function Admin() {
@@ -78,19 +78,7 @@ export default function Admin() {
 
         <div className="grid gap-6">
           <AICreditSettingsSection />
-
-          {/* Placeholder for future admin sections */}
-          <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage user accounts and permissions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                User management features coming soon...
-              </p>
-            </CardContent>
-          </Card>
+          <UserManagementSection adminId={user?.id} />
         </div>
       </div>
     </div>
