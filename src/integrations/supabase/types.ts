@@ -706,6 +706,26 @@ export type Database = {
           },
         ]
       }
+      v_ai_allowance_current: {
+        Row: {
+          created_at: string | null
+          credits_granted: number | null
+          credits_used: number | null
+          id: string | null
+          metadata: Json | null
+          period_end: string | null
+          period_start: string | null
+          remaining_credits: number | null
+          remaining_tokens: number | null
+          source: string | null
+          tokens_granted: number | null
+          tokens_per_credit: number | null
+          tokens_used: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_next_run_at: { Args: { p_frequency: string }; Returns: string }
